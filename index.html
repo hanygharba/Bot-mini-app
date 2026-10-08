@@ -85,3 +85,52 @@
         <h2>قائمتك الاستشارية المخصصة</h2>
         <p>شاهد الفيديوهات وتابع تقدمك مباشرة من هنا</p>
     </div>
+
+    <!-- كارت الفيديو الأول -->
+    <div class="card">
+        <div class="video-title">1. كيف تحدد مرحلة مشروعي بدقة؟</div>
+        <!-- مشغل الفيديو المباشر داخل الميني آب -->
+        <video controls preload="metadata">
+            <source src="رابط_فيديو_مباشر_1.mp4" type="video/mp4">
+            متصفحك لا يدعم عرض الفيديو.
+        </video>
+        <div class="actions">
+            <button class="btn-status" onclick="toggleStatus(this)">تمت المشاهدة ✓</button>
+        </div>
+    </div>
+
+    <!-- كارت الفيديو الثاني -->
+    <div class="card">
+        <div class="video-title">2. هيكلة الإدارة وفخ التشغيل اليومي</div>
+        <!-- مشغل الفيديو المباشر داخل الميني آب -->
+        <video controls preload="metadata">
+            <source src="رابط_فيديو_مباشر_2.mp4" type="video/mp4">
+            متصفحك لا يدعم عرض الفيديو.
+        </video>
+        <div class="actions">
+            <button class="btn-status" onclick="toggleStatus(this)">تمت المشاهدة ✓</button>
+        </div>
+    </div>
+
+    <script>
+        // تفعيل إعدادات الثيم الخاص بتليجرام تلقائياً
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+
+        // دالة تغيير حالة الزر وتحديث الحالة
+        function toggleStatus(button) {
+            if (button.classList.contains('completed')) {
+                button.classList.remove('completed');
+                button.innerText = 'للمشاهدة لاحقاً';
+                button.style.backgroundColor = '#e9ecef';
+                button.style.color = '#495057';
+            } else {
+                button.classList.add('completed');
+                button.innerText = 'تمت المشاهدة ✓';
+                button.style.backgroundColor = '#d4edda';
+                button.style.color = '#155724';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -107,6 +107,7 @@
         // 3. دالة لجلب البيانات وبناء الفيديوهات
         async function loadPlaylists() {
             try {
+                alert("الرابط الذي يقرأه تيليجرام الآن: " + window.location.search);
                 // استخراج الأرقام من الرابط (Query Parameters)
                 const urlParams = new URLSearchParams(window.location.search);
                 const shortIdsStr = urlParams.get('s'); // سيأخذ الأرقام الممررة من البوت

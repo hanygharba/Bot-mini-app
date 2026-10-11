@@ -137,18 +137,18 @@
                     if (videoData && videoData.link) {
                         const card = document.createElement('div');
                         card.className = 'card';
+                        
+                        // تعديل مهم: سنقوم بتحويل autoplay=true إلى autoplay=false برمجياً 
+                        // حتى لا تعمل كل الفيديوهات الـ 7 معاً في نفس الوقت وتسبب إزعاجاً للعميل
+                        const safeLinkHtml = videoData.link.replace("autoplay=true", "autoplay=false");
+
                         card.innerHTML = `
                             <div class="video-title">${index + 1}. ${videoData.question}</div>
+                            
                             <div class="video-container">
-                                <div style="position:relative;padding-top:56.25%;">
-                                    <iframe src="${videoData.link}?autoplay=false&loop=false&muted=false&preload=false&responsive=true" 
-                                        loading="lazy"
-                                        style="border:0;position:absolute;top:0;height:100%;width:100%;"
-                                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" 
-                                        allowfullscreen="true">
-                                    </iframe>
-                                </div>
+                                ${safeLinkHtml} 
                             </div>
+                            
                             <div class="actions">
                                 <button class="btn btn-status" onclick="toggleStatus(this)">علامة كـ مقروء ✓</button>
                             </div>

@@ -117,7 +117,7 @@
 
                 // جلب قاعدة البيانات المصغرة (JSON) 
                 // تأكد من رفع ملف qa_data.json بجوار ملف index.html على جيت هب
-                const response = await fetch('qa_data.json');
+                const response = await fetch('https://raw.githubusercontent.com/hanygharba/Bot-mini-app/main/qa_data.json');
                 const allVideos = await response.json();
 
                 const container = document.body;

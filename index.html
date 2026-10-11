@@ -3,39 +3,41 @@
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // استخراج معرف المستخدم من تيليجرام
-        const userId = tg.initDataUnsafe?.user?.id;
-
-        // دالة تغيير حالة المشاهدة
-        function toggleStatus(button, videoId) {
+        // 2. دالة تغيير حالة المشاهدة (UI فقط حالياً)
+        function toggleStatus(button) {
             if (button.classList.contains('completed')) {
                 button.classList.remove('completed');
                 button.innerText = 'تمت المشاهدة ✓';
                 button.style.backgroundColor = '#3a3a3c';
-                // هنا يمكننا مستقبلاً إرسال طلب للـ API لإزالة المشاهدة
             } else {
                 button.classList.add('completed');
                 button.innerText = 'تمت المشاهدة ✓ (مكتمل)';
                 button.style.backgroundColor = '#2a9d8f';
-                // هنا يمكننا مستقبلاً إرسال طلب للـ API لتسجيل المشاهدة
             }
         }
 
-        // دالة بناء واجهة الفيديوهات ديناميكياً
+        // 3. دالة لجلب البيانات وبناء الفيديوهات
         async function loadPlaylists() {
-            if (!userId) {
-                document.body.innerHTML = "<h3 style='text-align:center;'>عذراً، يرجى فتح التطبيق من داخل تيليجرام.</h3>";
-                return;
-            }
-
             try {
-                // استدعاء البيانات من السيرفر (سنقوم ببرمجة هذا الرابط لاحقاً)
-                const response = await fetch(`https://your-server-domain.com/api/playlist/${userId}`);
-                const data = await response.json();
+                // استخراج الأرقام من الرابط (Query Parameters)
+                const urlParams = new URLSearchParams(window.location.search);
+                const shortIdsStr = urlParams.get('s'); // الأرقام ستكون نص "1,5,12"
+                
+                if (!shortIdsStr) {
+                    document.body.innerHTML = "<h3 style='text-align:center;'>لم يتم العثور على قائمة مخصصة. يرجى إنهاء التشخيص في البوت أولاً.</h3>";
+                    return;
+                }
+
+                // تحويل النص إلى مصفوفة أرقام
+                const shortIds = shortIdsStr.split(',').map(id => parseInt(id.trim()));
+
+                // جلب قاعدة البيانات المصغرة (JSON) من نفس مسار الموقع على جيت هب
+                const response = await fetch('qa_data.json');
+                const allVideos = await response.json();
 
                 const container = document.body;
                 
-                // تنظيف المحتوى الحالي وبناء القائمة العاجلة
+                // تجهيز ترويسة الصفحة
                 container.innerHTML = `
                     <div class="header">
                         <h2>قائمتك الاستشارية المخصصة</h2>
@@ -43,34 +45,40 @@
                     </div>
                 `;
 
-                // بناء بطاقة لكل فيديو في القائمة المختصرة
-                data.short_playlist.forEach((video, index) => {
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <div class="video-title">${index + 1}. ${video.title}</div>
-                        <div class="video-container">
-                            <div style="position:relative;padding-top:56.25%;">
-                                <iframe src="${video.link}?autoplay=false&loop=false&muted=false&preload=false&responsive=true" 
-                                    loading="lazy"
-                                    style="border:0;position:absolute;top:0;height:100%;width:100%;"
-                                    allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" 
-                                    allowfullscreen="true">
-                                </iframe>
+                // بناء بطاقة لكل فيديو موجود في القائمة المختصرة
+                // نمر على كل ID، ونبحث عن بياناته في allVideos
+                shortIds.forEach((id, index) => {
+                    const videoData = allVideos.find(v => parseInt(v.id) === id);
+                    
+                    if (videoData && videoData.link) {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.innerHTML = `
+                            <div class="video-title">${index + 1}. ${videoData.question}</div>
+                            <div class="video-container">
+                                <div style="position:relative;padding-top:56.25%;">
+                                    <iframe src="${videoData.link}?autoplay=false&loop=false&muted=false&preload=false&responsive=true" 
+                                        loading="lazy"
+                                        style="border:0;position:absolute;top:0;height:100%;width:100%;"
+                                        allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" 
+                                        allowfullscreen="true">
+                                    </iframe>
+                                </div>
                             </div>
-                        </div>
-                        <div class="actions">
-                            <button class="btn btn-status" onclick="toggleStatus(this, ${video.id})">علامة كـ مقروء ✓</button>
-                        </div>
-                    `;
-                    container.appendChild(card);
+                            <div class="actions">
+                                <button class="btn btn-status" onclick="toggleStatus(this)">علامة كـ مقروء ✓</button>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    }
                 });
 
             } catch (error) {
                 console.error("Error loading playlist:", error);
+                document.body.innerHTML = "<h3 style='text-align:center;'>حدث خطأ أثناء تحميل الفيديوهات. يرجى المحاولة لاحقاً.</h3>";
             }
         }
 
-        // تشغيل الدالة عند تحميل الصفحة
+        // تشغيل الدالة فور تحميل الصفحة
         window.onload = loadPlaylists;
     </script>

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>خطة الاستشارة وقائمة التشغيل</title>
-    <!-- مكتبة تليجرام الرسمية للـ Mini Apps -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
@@ -34,6 +33,38 @@
             color: #a1a1aa;
             margin: 0;
         }
+
+        /* تنسيق التبويبات (Tabs) */
+        .tabs {
+            display: flex;
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .tab-btn.active {
+            background-color: var(--accent-color);
+            color: #fff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
         .card {
             background-color: var(--card-bg);
             border-radius: 12px;
@@ -86,12 +117,26 @@
     </style>
 </head>
 <body>
+
+    <div class="header">
+        <h2>قائمتك الاستشارية المخصصة</h2>
+        <p>بناءً على تشخيص مرحلة وتحديات مشروعك</p>
+    </div>
+
+    <!-- أزرار التبويبات -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('short')">القائمة العاجلة (أهم 7)</button>
+        <button class="tab-btn" onclick="switchTab('long')">القائمة المطولة الشاملة</button>
+    </div>
+
+    <!-- حاويات الفيديوهات (سيتم ملؤها بالجافاسكربت) -->
+    <div id="short-content" class="tab-content active"></div>
+    <div id="long-content" class="tab-content"></div>
+
     <script>
-        // 1. تهيئة تطبيق تيليجرام
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // 2. دالة تغيير حالة المشاهدة (UI فقط حالياً)
         function toggleStatus(button) {
             if (button.classList.contains('completed')) {
                 button.classList.remove('completed');
@@ -104,67 +149,78 @@
             }
         }
 
-        // 3. دالة لجلب البيانات وبناء الفيديوهات
-        async function loadPlaylists() {
-            try {
-                alert("الرابط الذي يقرأه تيليجرام الآن: " + window.location.search);
-                // استخراج الأرقام من الرابط (Query Parameters)
-                const urlParams = new URLSearchParams(window.location.search);
-                const shortIdsStr = urlParams.get('s'); // سيأخذ الأرقام الممررة من البوت
-                
-                // للتبسيط والتجربة: إذا فتحت الرابط مباشرة بدون بوت سيعرض لك فيديوهات تجريبية
-                const idsToLoad = shortIdsStr ? shortIdsStr : "1,2"; 
-                const shortIds = idsToLoad.split(',').map(id => parseInt(id.trim()));
-
-                // جلب قاعدة البيانات المصغرة (JSON) 
-                // تأكد من رفع ملف qa_data.json بجوار ملف index.html على جيت هب
-                const response = await fetch('https://raw.githubusercontent.com/hanygharba/Bot-mini-app/main/qa_data.json');
-                const allVideos = await response.json();
-
-                const container = document.body;
-                
-                // تجهيز ترويسة الصفحة
-                container.innerHTML = `
-                    <div class="header">
-                        <h2>قائمتك الاستشارية المخصصة</h2>
-                        <p>القائمة العاجلة بناءً على تشخيص مشروعك</p>
-                    </div>
-                `;
-
-                // بناء بطاقة لكل فيديو موجود في القائمة المختصرة
-                shortIds.forEach((id, index) => {
-                    const videoData = allVideos.find(v => parseInt(v.id) === id);
-                    
-                    if (videoData && videoData.link) {
-                        const card = document.createElement('div');
-                        card.className = 'card';
-                        
-                        // تعديل مهم: سنقوم بتحويل autoplay=true إلى autoplay=false برمجياً 
-                        // حتى لا تعمل كل الفيديوهات الـ 7 معاً في نفس الوقت وتسبب إزعاجاً للعميل
-                        const safeLinkHtml = videoData.link.replace("autoplay=true", "autoplay=false");
-
-                        card.innerHTML = `
-                            <div class="video-title">${index + 1}. ${videoData.question}</div>
-                            
-                            <div class="video-container">
-                                ${safeLinkHtml} 
-                            </div>
-                            
-                            <div class="actions">
-                                <button class="btn btn-status" onclick="toggleStatus(this)">علامة كـ مقروء ✓</button>
-                            </div>
-                        `;
-                        container.appendChild(card);
-                    }
-                });
-
-            } catch (error) {
-                console.error("Error loading playlist:", error);
-                document.body.innerHTML = "<h3 style='text-align:center;'>حدث خطأ أثناء تحميل الفيديوهات. تأكد من رفع ملف qa_data.json.</h3>";
+        function switchTab(tabName) {
+            // إزالة الأكتيف من كل الأزرار والمحتوى
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // إضافة الأكتيف للتبويب المطلوب
+            if(tabName === 'short') {
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('short-content').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('long-content').classList.add('active');
             }
         }
 
-        // تشغيل الدالة فور تحميل الصفحة
+        function renderVideoCards(idsArray, allVideosData, containerElement) {
+            if (!idsArray || idsArray.length === 0) {
+                containerElement.innerHTML = "<p style='text-align:center;'>لا توجد فيديوهات في هذه القائمة.</p>";
+                return;
+            }
+
+            idsArray.forEach((id, index) => {
+                const videoData = allVideosData.find(v => parseInt(v.id) === id);
+                if (videoData && videoData.link) {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    const safeLinkHtml = videoData.link.replace("autoplay=true", "autoplay=false");
+                    
+                    card.innerHTML = `
+                        <div class="video-title">${index + 1}. ${videoData.question}</div>
+                        <div class="video-container">
+                            ${safeLinkHtml} 
+                        </div>
+                        <div class="actions">
+                            <button class="btn btn-status" onclick="toggleStatus(this)">علامة كـ مقروء ✓</button>
+                        </div>
+                    `;
+                    containerElement.appendChild(card);
+                }
+            });
+        }
+
+        async function loadPlaylists() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const shortIdsStr = urlParams.get('s'); 
+                const longIdsStr = urlParams.get('l'); 
+                
+                if (!shortIdsStr && !longIdsStr) {
+                    document.getElementById('short-content').innerHTML = "<h3 style='text-align:center;'>لم يتم العثور على قوائم مخصصة. يرجى إنهاء التشخيص أولاً.</h3>";
+                    return;
+                }
+
+                // تحويل النصوص إلى مصفوفات أرقام
+                const shortIds = shortIdsStr ? shortIdsStr.split(',').map(id => parseInt(id.trim())) : [];
+                const longIds = longIdsStr ? longIdsStr.split(',').map(id => parseInt(id.trim())) : [];
+
+                const response = await fetch('https://raw.githubusercontent.com/hanygharba/Bot-mini-app/main/qa_data.json');
+                const allVideos = await response.json();
+
+                // بناء واجهة القائمة العاجلة
+                renderVideoCards(shortIds, allVideos, document.getElementById('short-content'));
+                
+                // بناء واجهة القائمة المطولة
+                renderVideoCards(longIds, allVideos, document.getElementById('long-content'));
+
+            } catch (error) {
+                console.error("Error loading playlist:", error);
+                document.getElementById('short-content').innerHTML = "<h3 style='text-align:center;'>حدث خطأ أثناء تحميل الفيديوهات.</h3>";
+            }
+        }
+
         window.onload = loadPlaylists;
     </script>
 </body>

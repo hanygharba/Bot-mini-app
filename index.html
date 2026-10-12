@@ -119,34 +119,62 @@
 <body>
 
     <div class="header">
-        <h2>قائمتك الاستشارية المخصصة</h2>
-        <p>بناءً على تشخيص مرحلة وتحديات مشروعك</p>
+        <h2>قائمتك الاستشارية</h2>
     </div>
 
-    <!-- أزرار التبويبات -->
+    <!-- أزرار التبويبات المحدثة -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('short')">القائمة العاجلة (أهم 7)</button>
-        <button class="tab-btn" onclick="switchTab('long')">القائمة المطولة الشاملة</button>
+        <button class="tab-btn active" onclick="switchTab('short')">👌🏻 أهم 7</button>
+        <button class="tab-btn" onclick="switchTab('long')">👍🏻 المخصصة لك</button>
+        <button class="tab-btn" onclick="switchTab('all')">🤝🏻 الشاملة</button>
     </div>
 
-    <!-- حاويات الفيديوهات (سيتم ملؤها بالجافاسكربت) -->
+    <!-- شريط التقدم (ثابت في الأعلى) -->
+    <div style="background: #3a3a3c; border-radius: 10px; height: 8px; margin-bottom: 20px; position: sticky; top: 10px; z-index: 100;">
+        <div id="progress-bar" style="background: var(--accent-color); width: 0%; height: 100%; border-radius: 10px; transition: 0.3s;"></div>
+    </div>
+
+    <!-- حاويات الفيديوهات -->
     <div id="short-content" class="tab-content active"></div>
     <div id="long-content" class="tab-content"></div>
+    <div id="all-content" class="tab-content"></div> <!-- حاوية القائمة الشاملة -->
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
+        // دالة تحديث شريط التقدم
+        function updateProgress() {
+            // البحث عن التبويب النشط حالياً
+            const activeContent = document.querySelector('.tab-content.active');
+            if (!activeContent) return;
+
+            // حساب عدد الأزرار الكلية وعدد الأزرار المكتملة في التبويب النشط
+            const totalButtons = activeContent.querySelectorAll('.btn-status').length;
+            const completedButtons = activeContent.querySelectorAll('.btn-status.completed').length;
+            
+            // حساب النسبة المئوية
+            let percentage = 0;
+            if (totalButtons > 0) {
+                percentage = (completedButtons / totalButtons) * 100;
+            }
+            
+            // تحديث عرض شريط التقدم
+            document.getElementById('progress-bar').style.width = percentage + '%';
+        }
+
         function toggleStatus(button) {
             if (button.classList.contains('completed')) {
                 button.classList.remove('completed');
-                button.innerText = 'تمت المشاهدة ✓';
+                button.innerText = '✔️ شاهدته';
                 button.style.backgroundColor = '#3a3a3c';
             } else {
                 button.classList.add('completed');
-                button.innerText = 'تمت المشاهدة ✓ (مكتمل)';
-                button.style.backgroundColor = '#2a9d8f';
+                button.innerText = '✅ شاهدته';
+                button.style.backgroundColor = 'var(--accent-color)';
             }
+            // تحديث شريط التقدم عند الضغط على الزر
+            updateProgress();
         }
 
         function switchTab(tabName) {
@@ -154,14 +182,20 @@
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
             
-            // إضافة الأكتيف للتبويب المطلوب
+            // إضافة الأكتيف للتبويب المطلوب وإظهار المحتوى الخاص به
             if(tabName === 'short') {
                 document.querySelectorAll('.tab-btn')[0].classList.add('active');
                 document.getElementById('short-content').classList.add('active');
-            } else {
+            } else if(tabName === 'long') {
                 document.querySelectorAll('.tab-btn')[1].classList.add('active');
                 document.getElementById('long-content').classList.add('active');
+            } else if(tabName === 'all') {
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                document.getElementById('all-content').classList.add('active');
             }
+            
+            // تحديث شريط التقدم فور التبديل ليعكس حالة التبويب الجديد
+            updateProgress();
         }
 
         function renderVideoCards(idsArray, allVideosData, containerElement) {
@@ -183,7 +217,7 @@
                             ${safeLinkHtml} 
                         </div>
                         <div class="actions">
-                            <button class="btn btn-status" onclick="toggleStatus(this)">علامة كـ مقروء ✓</button>
+                            <button class="btn btn-status" onclick="toggleStatus(this)">✔️ شاهدته</button>
                         </div>
                     `;
                     containerElement.appendChild(card);
@@ -214,6 +248,13 @@
                 
                 // بناء واجهة القائمة المطولة
                 renderVideoCards(longIds, allVideos, document.getElementById('long-content'));
+
+                // بناء واجهة القائمة الشاملة (استخراج جميع الـ IDs من كل الفيديوهات)
+                const allIds = allVideos.map(v => parseInt(v.id));
+                renderVideoCards(allIds, allVideos, document.getElementById('all-content'));
+
+                // تحديث شريط التقدم للتبويب النشط افتراضياً عند التحميل
+                updateProgress();
 
             } catch (error) {
                 console.error("Error loading playlist:", error);

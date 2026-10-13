@@ -300,9 +300,9 @@
                         const serverW = stateData.watched || [];
                         const serverF = stateData.favorites || [];
                         
-                        // دمج البيانات (المحلية + السيرفر) وإزالة المكرر
-                        watchedVideos = [...new Set([...localW, ...serverW])];
-                        favoriteVideos = [...new Set([...localF, ...serverF])];
+                        // الاعتماد كلياً على السيرفر كمرجع أساسي
+                        watchedVideos = serverW;
+                        favoriteVideos = serverF;
                         
                         // تحديث الذاكرة المحلية بالنسخة المدمجة
                         localStorage.setItem(`watched_${TELEGRAM_ID}`, JSON.stringify(watchedVideos));

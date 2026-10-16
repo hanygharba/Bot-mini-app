@@ -71,13 +71,14 @@
             background-color: rgba(0,0,0,0.7); justify-content: center; align-items: center;
         }
         .modal-content {
-            background-color: var(--card-bg); padding: 20px; border-radius: 12px; width: 80%; max-width: 400px;
-            text-align: center; border: 1px solid var(--border-color);
+            background-color: var(--card-bg); padding: 20px; border-radius: 12px; width: 85%; max-width: 400px;
+            max-height: 80vh; overflow-y: auto; text-align: center; border: 1px solid var(--border-color);
         }
         .attach-link {
-            display: block; padding: 12px; margin: 8px 0; background-color: #3a3a3c;
-            color: white; text-decoration: none; border-radius: 8px; font-weight: bold;
+            display: block; padding: 10px 12px; background-color: #3a3a3c;
+            color: #fff; text-decoration: none; border-radius: 8px; font-weight: bold; transition: 0.2s;
         }
+        .attach-link:hover { background-color: var(--accent-color); }
         .close-btn { margin-top: 15px; padding: 10px 20px; background-color: #e74c3c; border: none; color: white; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
@@ -150,11 +151,9 @@
 
         // إرسال التحديث للسيرفر + تحديث كل الأزرار المكررة + الحفظ المحلي
         async function toggleAction(clickedButton, videoId, actionType) {
-            // معرفة الحالة الجديدة التي يجب أن يكون عليها الزر
             const isCurrentlyActive = clickedButton.classList.contains('active');
             const willBeActive = !isCurrentlyActive;
 
-            // 1. تحديث المتغيرات في الذاكرة
             if (actionType === 'watched') {
                 if (willBeActive) {
                     if (!watchedVideos.includes(videoId)) watchedVideos.push(videoId);
@@ -171,7 +170,6 @@
                 localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
             }
 
-            // 2. تحديث **كل** الأزرار التي تحمل نفس رقم الفيديو في جميع التبويبات
             const allRelatedButtons = document.querySelectorAll(`button[data-id="${videoId}"]`);
             allRelatedButtons.forEach(btn => {
                 if (btn.classList.contains(actionType === 'watched' ? 'watched' : 'fav')) {
@@ -185,10 +183,8 @@
                 }
             });
 
-            // 3. تحديث شريط التقدم
             if (actionType === 'watched') updateProgress();
 
-            // 4. المحاولة لإرسال البيانات للسيرفر
             try {
                 await fetch(`${API_BASE}/toggle_action`, {
                     method: 'POST',
@@ -200,23 +196,39 @@
                     })
                 });
             } catch(e) {
-                console.warn("السيرفر غير متصل بسبب مشكلة الـ SSL، لكن تم حفظ الحالة محلياً في الهاتف بنجاح.");
+                console.warn("السيرفر غير متصل، تم حفظ الحالة محلياً بنجاح.");
             }
         }
 
-        // عرض الملحقات في نافذة منبثقة
+        // عرض الملحقات في نافذة منبثقة (الاسم قابل للضغط وتحته الوصف)
         function openAttachments(attachmentsJson) {
             const container = document.getElementById('attachLinksContainer');
             container.innerHTML = "";
             let attachments = JSON.parse(decodeURIComponent(attachmentsJson));
             
             attachments.forEach(att => {
+                const itemDiv = document.createElement('div');
+                itemDiv.style.marginBottom = "14px";
+                itemDiv.style.textAlign = "right";
+                
                 let a = document.createElement('a');
                 a.className = 'attach-link';
                 a.href = att.link;
                 a.target = "_blank";
-                a.innerText = `🔗 ${att.name}`;
-                container.appendChild(a);
+                a.innerHTML = `🔗 ${att.name || 'ملحق'}`;
+                itemDiv.appendChild(a);
+
+                if (att.description && att.description.trim() !== "") {
+                    let desc = document.createElement('div');
+                    desc.style.fontSize = "12px";
+                    desc.style.color = "var(--tg-theme-hint-color, #8e8e93)";
+                    desc.style.marginTop = "5px";
+                    desc.style.paddingRight = "4px";
+                    desc.innerText = att.description;
+                    itemDiv.appendChild(desc);
+                }
+
+                container.appendChild(itemDiv);
             });
             document.getElementById('attachModal').style.display = 'flex';
         }
@@ -256,7 +268,6 @@
                             attachBtnHtml = `<button class="btn attach" onclick="openAttachments('${attData}')">🔗 ملحقات</button>`;
                         }
                         
-                        // تمت إضافة data-id للبحث عنها لاحقاً وتحديثها معاً
                         card.innerHTML = `
                             <div class="video-title">${(i + index + 1)}. ${videoData.question}</div>
                             <div class="video-container">${safeLinkHtml}</div>
@@ -278,7 +289,6 @@
         }
 
         async function initApp() {
-            // 1. جلب البيانات المحلية أولاً من هاتف العميل
             let localW = [];
             let localF = [];
             try {
@@ -291,31 +301,22 @@
                 favoriteVideos = [...localF];
             } catch (e) {}
 
-            // 2. محاولة جلب حالة المستخدم من السيرفر ومزامنتها (دمج)
             try {
                 if (TELEGRAM_ID !== 0) {
                     const stateRes = await fetch(`${API_BASE}/user_state/${TELEGRAM_ID}`);
                     if (stateRes.ok) {
                         const stateData = await stateRes.json();
-                        const serverW = stateData.watched || [];
-                        const serverF = stateData.favorites || [];
+                        watchedVideos = stateData.watched || [];
+                        favoriteVideos = stateData.favorites || [];
                         
-                        // الاعتماد كلياً على السيرفر كمرجع أساسي
-                        watchedVideos = serverW;
-                        favoriteVideos = serverF;
-                        
-                        // تحديث الذاكرة المحلية بالنسخة المدمجة
                         localStorage.setItem(`watched_${TELEGRAM_ID}`, JSON.stringify(watchedVideos));
                         localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
-                        
-                        // ملاحظة: لاحقاً سنضيف كوداً هنا لرفع هذه القائمة المدمجة للسيرفر
                     }
                 }
             } catch (e) {
                 console.warn("تعذر الاتصال بالسيرفر، جاري الاعتماد على الذاكرة المحلية فقط.");
             }
 
-            // 3. جلب قوائم التشغيل وعرضها
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 const shortIds = urlParams.get('s') ? urlParams.get('s').split(',').map(id => parseInt(id.trim())) : [];

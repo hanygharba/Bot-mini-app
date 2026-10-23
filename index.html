@@ -62,12 +62,12 @@
         }
         .video-container {
             width: 100%;
-            aspect-ratio: 2.35 / 1; /* يضمن أن المستطيل دائماً بأبعاد الفيديو العريض */
+            aspect-ratio: 2.35 / 1; /* أو 21 / 9 للحفاظ على الكادر العريض بدون شرايط سودا */
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 12px;
             background-color: #000;
-            position: relative; /* ضروري لضبط موضع الفيديو بداخله */
+            position: relative; 
         }
 
         .video-container video,
@@ -79,9 +79,9 @@
             height: 100% !important;
             border: none;
             outline: none;
-            object-fit: cover;
+            /* تم إزالة object-fit نهائياً لترك المشغل يعرض الصورة وأدوات التحكم براحته */
         }
-        
+
         
         
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }

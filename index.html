@@ -62,7 +62,8 @@
         }
         .video-container {
             width: 100%;
-            aspect-ratio: 2.35 / 1; /* أو 21 / 9 للحفاظ على الكادر العريض بدون شرايط سودا */
+            padding-bottom: 56.25%; /* هذه النسبة تعادل 16:9 بالضبط وتعمل بشكل إجباري */
+            height: 0;
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 12px;

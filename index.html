@@ -61,28 +61,9 @@
             display: block; /* تم إلغاء flex لتجنب تعارضه مع المشغل */
         }
         
-        /* فرض نسبة الأبعاد العريضة 16:9 على المشغل مباشرة */
-        .video-container iframe, 
-        .video-container video {
-            width: 100% !important;
-            height: auto !important;
-            aspect-ratio: 16 / 9 !important;
-            display: block !important;
-            border: none !important;
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
-        }
-
-        /* تعطيل أي مساحات فارغة (Padding/Heights) يفرضها كود المشغل الأساسي */
-        .video-container > div {
-            padding: 0 !important;
-            margin: 0 !important;
-            height: auto !important;
-            position: relative !important;
-        }
-
-
+        .video-container { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 12px; background-color: #000; }
+        video { width: 100%; display: block; outline: none; }
+        
         
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .btn {

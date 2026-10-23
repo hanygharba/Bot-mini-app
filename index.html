@@ -60,29 +60,8 @@
             background-color: #000;
             display: block; /* تم إلغاء flex لتجنب تعارضه مع المشغل */
         }
-        .video-container {
-            width: 100%;
-            padding-bottom: 56.25%; /* هذه النسبة تعادل 16:9 بالضبط وتعمل بشكل إجباري */
-            height: 0;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-bottom: 12px;
-            background-color: #000;
-            position: relative; 
-        }
-
-        .video-container video,
-        .video-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            border: none;
-            outline: none;
-            /* تم إزالة object-fit نهائياً لترك المشغل يعرض الصورة وأدوات التحكم براحته */
-        }
-
+        .video-container { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 12px; background-color: #000; }
+        video { width: 100%; display: block; outline: none; }
         
         
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }

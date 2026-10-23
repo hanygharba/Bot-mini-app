@@ -61,9 +61,26 @@
             display: block; /* تم إلغاء flex لتجنب تعارضه مع المشغل */
         }
         
-        .video-container { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 12px; background-color: #000; }
-        video { width: 100%; display: block; outline: none; }
-        
+        .video-container {
+            width: 100%;
+            aspect-ratio: 16 / 9; /* تضبط المستطيل ليكون بأبعاد الفيديو العريض */
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            background-color: #000;
+            position: relative;
+        }
+
+        .video-container video,
+        .video-container iframe {
+            width: 100%;
+            height: 100%;
+            display: block;
+            outline: none;
+            border: none;
+            object-fit: cover; /* تضمن أن الصورة المصغرة تملأ المساحة بالكامل */
+        }
+
         
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .btn {

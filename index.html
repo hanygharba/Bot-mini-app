@@ -52,15 +52,27 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid var(--border-color);
         }
         .video-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; line-height: 1.4; }
-        .video-container { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 12px; background-color: #000; display: flex;
+        .video-container {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            background-color: #000;
+            display: flex;
             justify-content: center;
             align-items: center;
             /* السماح للارتفاع بالتكيف تلقائياً حسب أبعاد الفيديو الفعلية لمنع الفراغات والأشرطة السوداء */
-            aspect-ratio: auto; }
-        video { width: 100%; height: auto;
+            aspect-ratio: auto; 
+        }
+        
+        video, iframe {
+            width: 100%;
+            height: auto;
             max-height: 70vh; /* لمنع تمدد الفيديو بشكل مبالغ فيه على الشاشات الطويلة */
             object-fit: contain; /* لضمان ظهور الـ thumbnail والصورة كاملة بدون قص */
-            display: block; outline: none; }
+            display: block;
+            outline: none;
+        }
         
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .btn {

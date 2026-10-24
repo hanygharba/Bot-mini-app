@@ -330,7 +330,16 @@
                     const { normId, videoData } = item;
                     const card = document.createElement('div');
                     card.className = 'card';
-                    const safeLinkHtml = String(videoData['bunny link']).replace("autoplay=true", "autoplay=false");
+                    let videoLink = String(videoData['bunny link'] || videoData.link).trim();
+                    let safeLinkHtml = "";
+                    
+                    // فحص ما إذا كان الرابط مجرد (يبدأ بـ http) أو كود iframe جاهز
+                    if (videoLink.startsWith("http")) {
+                        let embedUrl = videoLink.replace("/play/", "/embed/");
+                        safeLinkHtml = `<div style="position:relative;padding-top:56.25%;"><iframe src="${embedUrl}?autoplay=false&loop=false&muted=false&preload=false&responsive=true" loading="lazy" style="border:0;position:absolute;top:0;height:100%;width:100%;" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowfullscreen="true"></iframe></div>`;
+                    } else {
+                        safeLinkHtml = videoLink.replace("autoplay=true", "autoplay=false");
+                    }
                     
                     const isWatched = watchedVideos.includes(normId);
                     const isFav = favoriteVideos.includes(normId);
@@ -407,32 +416,31 @@
         }
 
         window.onload = initApp;
-        // منطق إضافة التطبيق للشاشة الرئيسية (PWA)
+        // منطق إضافة التطبيق للشاشة الرئيسية
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
-            // منع النافذة الافتراضية من الظهور فوراً
             e.preventDefault();
             deferredPrompt = e;
-            
-            // الانتظار لمدة دقيقتين (120,000 مللي ثانية) قبل عرض النافذة المخصصة
-            setTimeout(() => {
-                if(deferredPrompt) {
-                    document.getElementById('install-popup').style.display = 'block';
-                }
-            }, 120000); 
         });
 
-        // عند الضغط على "إضافة الآن"
+        // تشغيل المؤقت فور فتح الـ Mini App لضمان ظهور النافذة بعد دقيقتين
+        // نصيحة: يمكنك تغيير 120000 إلى 5000 مؤقتاً لتجربتها (5 ثواني) ثم إعادتها
+        setTimeout(() => {
+            document.getElementById('install-popup').style.display = 'block';
+        }, 120000); 
+
         document.getElementById('install-btn').addEventListener('click', async () => {
             document.getElementById('install-popup').style.display = 'none';
             if (deferredPrompt) {
-                deferredPrompt.prompt(); // عرض نافذة نظام التشغيل الرسمية
+                deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 deferredPrompt = null;
+            } else {
+                // رسالة توجيهية لمتصفحات مثل تيليجرام التي تمنع النافذة التلقائية
+                alert("لإضافة المكتبة لشاشتك الرئيسية، اضغط على علامة الثلاث نقاط (⋮) أعلى الشاشة واختر 'الإضافة للشاشة الرئيسية' أو 'Add to Home screen'.");
             }
         });
 
-        // عند الضغط على "لاحقاً"
         document.getElementById('close-install-btn').addEventListener('click', () => {
             document.getElementById('install-popup').style.display = 'none';
         });

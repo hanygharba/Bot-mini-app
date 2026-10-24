@@ -417,51 +417,5 @@
 
         window.onload = initApp;
     </script>
-
-    <!-- 1. كود الـ HTML للنافذة (نضعه هنا ليتعرف عليه المتصفح أولاً) -->
-    <div id="install-popup" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; width: 90%; max-width: 350px; text-align: center; border: 1px solid var(--border-color);">
-        <p style="margin: 0 0 10px; font-size: 14px; color: var(--text-color);">للوصول السريع للمكتبة الاستشارية، أضف التطبيق لشاشتك الرئيسية.</p>
-        <button id="install-btn" style="background-color: var(--accent-color); color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-left: 10px;">إضافة الآن</button>
-        <button id="close-install-btn" style="background-color: transparent; color: var(--hint-color); border: 1px solid var(--hint-color); padding: 8px 16px; border-radius: 6px; cursor: pointer;">لاحقاً</button>
-    </div>
-
-    <!-- 2. كود الـ JavaScript الخاص بالنافذة (يأتي بعد رسم الأزرار) -->
-    <script>
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-        });
-
-        // التحقق مما إذا كان المستخدم قد تفاعل مع الرسالة مسبقاً عن طريق localStorage
-        if (!localStorage.getItem('pwa_prompt_dismissed')) {
-            // تشغيل المؤقت (دقيقتين)
-            setTimeout(() => {
-                document.getElementById('install-popup').style.display = 'block';
-            }, 5000); 
-        }
-
-        // عند الضغط على "إضافة الآن"
-        document.getElementById('install-btn').addEventListener('click', async () => {
-            document.getElementById('install-popup').style.display = 'none';
-            // حفظ قرار المستخدم حتى لا تظهر الرسالة له مستقبلاً
-            localStorage.setItem('pwa_prompt_dismissed', 'true');
-            
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                deferredPrompt = null;
-            } else {
-                alert("لإضافة المكتبة لشاشتك الرئيسية، اضغط على علامة الثلاث نقاط (⋮) أعلى الشاشة واختر 'الإضافة للشاشة الرئيسية' أو 'Add to Home screen'.");
-            }
-        });
-
-        // عند الضغط على "لاحقاً"
-        document.getElementById('close-install-btn').addEventListener('click', () => {
-            document.getElementById('install-popup').style.display = 'none';
-            // حفظ قرار المستخدم حتى لا تظهر الرسالة له مستقبلاً
-            localStorage.setItem('pwa_prompt_dismissed', 'true');
-        });
-    </script>
 </body>
 </html>

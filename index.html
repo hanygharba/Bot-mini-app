@@ -304,7 +304,7 @@
             idsArray.forEach(rawId => {
                 const normId = normalizeId(rawId);
                 const videoData = allVideosData.find(v => normalizeId(v.id) === normId);
-                if (videoData && videoData.link && String(videoData.link).trim().toLowerCase() !== "nan") {
+                if (videoData && videoData['bunny link'] && String(videoData['bunny link']).trim().toLowerCase() !== "nan") {
                     validItems.push({ normId, videoData });
                 }
             });
@@ -330,7 +330,7 @@
                     const { normId, videoData } = item;
                     const card = document.createElement('div');
                     card.className = 'card';
-                    const safeLinkHtml = String(videoData.link).replace("autoplay=true", "autoplay=false");
+                    const safeLinkHtml = String(videoData['bunny link']).replace("autoplay=true", "autoplay=false");
                     
                     const isWatched = watchedVideos.includes(normId);
                     const isFav = favoriteVideos.includes(normId);
@@ -407,6 +407,41 @@
         }
 
         window.onload = initApp;
+        // منطق إضافة التطبيق للشاشة الرئيسية (PWA)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // منع النافذة الافتراضية من الظهور فوراً
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // الانتظار لمدة دقيقتين (120,000 مللي ثانية) قبل عرض النافذة المخصصة
+            setTimeout(() => {
+                if(deferredPrompt) {
+                    document.getElementById('install-popup').style.display = 'block';
+                }
+            }, 120000); 
+        });
+
+        // عند الضغط على "إضافة الآن"
+        document.getElementById('install-btn').addEventListener('click', async () => {
+            document.getElementById('install-popup').style.display = 'none';
+            if (deferredPrompt) {
+                deferredPrompt.prompt(); // عرض نافذة نظام التشغيل الرسمية
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+            }
+        });
+
+        // عند الضغط على "لاحقاً"
+        document.getElementById('close-install-btn').addEventListener('click', () => {
+            document.getElementById('install-popup').style.display = 'none';
+        });
     </script>
+    <!-- نافذة منبثقة لإضافة التطبيق للشاشة الرئيسية -->
+    <div id="install-popup" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background-color: var(--card-bg); padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); z-index: 1000; width: 90%; max-width: 350px; text-align: center; border: 1px solid var(--border-color);">
+        <p style="margin: 0 0 10px; font-size: 14px; color: var(--text-color);">للوصول السريع للمكتبة الاستشارية، أضف التطبيق لشاشتك الرئيسية.</p>
+        <button id="install-btn" style="background-color: var(--accent-color); color: #ffffff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; margin-left: 10px;">إضافة الآن</button>
+        <button id="close-install-btn" style="background-color: transparent; color: var(--hint-color); border: 1px solid var(--hint-color); padding: 8px 16px; border-radius: 6px; cursor: pointer;">لاحقاً</button>
+    </div>
 </body>
 </html>

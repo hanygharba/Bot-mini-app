@@ -33,10 +33,24 @@
             border: 1px solid var(--border-color);
         }
         .tab-btn {
-            flex: 1; padding: 12px; background: none; border: none;
-            color: var(--text-color); font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.3s;
+            flex: 1;
+            padding: 12px 6px;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            white-space: nowrap;
+        }
+        .tab-btn.fav-tab {
+            flex: 0.55;
+            font-size: 15px;
         }
         .tab-btn.active { background-color: var(--accent-color); color: #fff; }
+        .tab-btn.fav-tab.active { background-color: var(--fav-color); color: #fff; }
+        
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
@@ -52,17 +66,15 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid var(--border-color);
         }
         .video-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; line-height: 1.4; }
-                .video-container {
+        .video-container {
             width: 100%;
             border-radius: 8px;
             overflow: hidden;
             margin-bottom: 12px;
             background-color: #000;
-            display: block; /* تم إلغاء flex لتجنب تعارضه مع المشغل */
+            display: block;
         }
-        .video-container { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 12px; background-color: #000; }
         video { width: 100%; display: block; outline: none; }
-        
         
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .btn {
@@ -74,6 +86,16 @@
         .btn.fav.active { background-color: var(--fav-color); }
         .btn.attach { background-color: #4a69bd; }
         
+        .empty-state {
+            text-align: center;
+            padding: 30px 15px;
+            color: var(--tg-theme-hint-color, #8e8e93);
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            border: 1px dashed var(--border-color);
+            line-height: 1.6;
+        }
+
         /* Modal الملحقات */
         .modal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
@@ -98,9 +120,10 @@
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('short')">👌🏻 أهم 7</button>
-        <button class="tab-btn" onclick="switchTab('long')">👍🏻 المخصصة لك</button>
-        <button class="tab-btn" onclick="switchTab('all')">🤝🏻 الشاملة</button>
+        <button id="tab-btn-short" class="tab-btn active" onclick="switchTab('short')">👌🏻 أهم 7</button>
+        <button id="tab-btn-long" class="tab-btn" onclick="switchTab('long')">👍🏻 المخصصة لك</button>
+        <button id="tab-btn-all" class="tab-btn" onclick="switchTab('all')">🤝🏻 الشاملة</button>
+        <button id="tab-btn-fav" class="tab-btn fav-tab" onclick="switchTab('fav')" title="المفضلة (مهتم)">⭐</button>
     </div>
 
     <div style="background: #3a3a3c; border-radius: 10px; height: 8px; margin-bottom: 20px; position: sticky; top: 10px; z-index: 100;">
@@ -110,9 +133,10 @@
     <div id="short-content" class="tab-content active"></div>
     <div id="long-content" class="tab-content"></div>
     <div id="all-content" class="tab-content"></div>
+    <div id="fav-content" class="tab-content"></div>
 
     <!-- نافذة الملحقات (Modal) -->
-    <div id="attachModal" class="modal">
+    <div id="attachModal" class="modal" onclick="if(event.target === this) this.style.display='none'">
         <div class="modal-content">
             <h3 style="margin-top:0;">ملحقات الفيديو</h3>
             <div id="attachLinksContainer"></div>
@@ -126,11 +150,13 @@
         
         // --- إعدادات الاتصال بالخلفية ---
         const API_BASE = "https://api.hanygharba.com";
-        const TELEGRAM_ID = tg.initDataUnsafe?.user?.id || 0; 
+        const TELEGRAM_ID = tg.initDataUnsafe?.user?.id || 0;
+        const INIT_DATA = tg.initData || "";
         
-        // متغيرات حفظ الحالة محلياً (تُحفظ كنصوص موحدة لدعم الأرقام و [Intro_1])
+        // متغيرات حفظ الحالة والبيانات محلياً
         let watchedVideos = [];
         let favoriteVideos = [];
+        let allVideosGlobal = [];
 
         // دالة توحيد المعرفات: تحول "001" أو 1 إلى "1"، وتبقي "[Intro_1]" كما هي بدون NaN
         function normalizeId(val) {
@@ -176,24 +202,35 @@
             document.getElementById('progress-bar').style.width = (total > 0 ? (completed / total) * 100 : 0) + '%';
         }
 
+        // تحديث محتوى تبويب المفضلة (⭐) بشكل ديناميكي
+        function renderFavoritesTab() {
+            const favContainer = document.getElementById('fav-content');
+            if (!favContainer) return;
+            renderVideoCards(
+                favoriteVideos,
+                allVideosGlobal,
+                favContainer,
+                "⭐ لم تقم بإضافة أي فيديوهات لقائمة المهتمين بعد.<br><small>اضغط على زر «📌 مهتم» أسفل أي فيديو ليظهر لك هنا مباشرة.</small>"
+            );
+        }
+
         function switchTab(tabName) {
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             
-            if (tabName === 'short') {
-                document.querySelectorAll('.tab-btn')[0].classList.add('active');
-                document.getElementById('short-content').classList.add('active');
-            } else if (tabName === 'long') {
-                document.querySelectorAll('.tab-btn')[1].classList.add('active');
-                document.getElementById('long-content').classList.add('active');
-            } else {
-                document.querySelectorAll('.tab-btn')[2].classList.add('active');
-                document.getElementById('all-content').classList.add('active');
+            const targetBtn = document.getElementById(`tab-btn-${tabName}`);
+            const targetContent = document.getElementById(`${tabName}-content`);
+            
+            if (targetBtn) targetBtn.classList.add('active');
+            if (targetContent) targetContent.classList.add('active');
+
+            if (tabName === 'fav') {
+                renderFavoritesTab();
             }
             updateProgress();
         }
 
-        // إرسال التحديث للسيرفر + تحديث كل الأزرار المكررة + الحفظ المحلي
+        // إرسال التحديث للسيرفر + تحديث كل الأزرار المكررة + تحديث تبويب ⭐ + الحفظ المحلي
         async function toggleAction(clickedButton, videoId, actionType) {
             const normId = normalizeId(videoId);
             const isCurrentlyActive = clickedButton.classList.contains('active');
@@ -215,7 +252,8 @@
                 localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
             }
 
-            const allRelatedButtons = document.querySelectorAll(`button[data-id="${normId}"]`);
+            // تحديث حالة جميع الأزرار المطابقة لهذا الفيديو في كافة التبويبات
+            const allRelatedButtons = document.querySelectorAll(`button[data-id="${CSS.escape(normId)}"]`);
             allRelatedButtons.forEach(btn => {
                 if (btn.classList.contains(actionType === 'watched' ? 'watched' : 'fav')) {
                     if (willBeActive) {
@@ -228,15 +266,22 @@
                 }
             });
 
-            if (actionType === 'watched') updateProgress();
+            // إعادة بناء قائمة ⭐ فوراً عند تعديل المفضلة
+            if (actionType === 'favorite') {
+                renderFavoritesTab();
+            }
 
-            // إرسال الرقم كـ Number إذا كان رقماً، أو النص كما هو إذا كان [Intro_...]
+            updateProgress();
+
             const payloadVideoId = !isNaN(Number(normId)) ? Number(normId) : normId;
 
             try {
                 await fetch(`${API_BASE}/toggle_action`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Telegram-Init-Data': INIT_DATA
+                    },
                     body: JSON.stringify({
                         telegram_id: TELEGRAM_ID,
                         video_id: payloadVideoId,
@@ -248,11 +293,16 @@
             }
         }
 
-        // عرض الملحقات في نافذة منبثقة (الاسم قابل للضغط وتحته الوصف)
+        // عرض الملحقات في نافذة منبثقة بأمان تام ضد XSS
         function openAttachments(attachmentsJson) {
             const container = document.getElementById('attachLinksContainer');
             container.innerHTML = "";
-            let attachments = JSON.parse(decodeURIComponent(attachmentsJson));
+            let attachments = [];
+            try {
+                attachments = JSON.parse(decodeURIComponent(attachmentsJson));
+            } catch (e) {
+                console.error("Failed to parse attachments:", e);
+            }
             
             attachments.forEach(att => {
                 const itemDiv = document.createElement('div');
@@ -265,13 +315,13 @@
                     a.href = att.link.trim();
                     a.target = "_blank";
                     a.rel = "noopener noreferrer";
-                    a.innerHTML = `🔗 ${att.name || 'ملحق'}`;
+                    a.textContent = `🔗 ${att.name || 'ملحق'}`;
                     itemDiv.appendChild(a);
                 } else {
                     let span = document.createElement('div');
                     span.className = 'attach-link';
                     span.style.opacity = "0.85";
-                    span.innerHTML = `📄 ${att.name || 'ملحق'}`;
+                    span.textContent = `📄 ${att.name || 'ملحق'}`;
                     itemDiv.appendChild(span);
                 }
 
@@ -282,7 +332,7 @@
                     desc.style.marginTop = "5px";
                     desc.style.paddingRight = "4px";
                     desc.style.lineHeight = "1.4";
-                    desc.innerText = att.description;
+                    desc.textContent = att.description;
                     itemDiv.appendChild(desc);
                 }
 
@@ -292,10 +342,10 @@
         }
 
         // بناء بطاقات الفيديوهات مقسمة إلى مجموعات (طي/فرد)
-        function renderVideoCards(idsArray, allVideosData, containerElement) {
+        function renderVideoCards(idsArray, allVideosData, containerElement, emptyMessage = "لا توجد فيديوهات في هذه القائمة.") {
             containerElement.innerHTML = "";
             if (!idsArray || idsArray.length === 0) {
-                containerElement.innerHTML = "<p style='text-align:center;'>لا توجد فيديوهات في هذه القائمة.</p>";
+                containerElement.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
                 return;
             }
 
@@ -304,13 +354,13 @@
             idsArray.forEach(rawId => {
                 const normId = normalizeId(rawId);
                 const videoData = allVideosData.find(v => normalizeId(v.id) === normId);
-                if (videoData && videoData['bunny link'] && String(videoData['bunny link']).trim().toLowerCase() !== "nan") {
+                if (videoData && (videoData['bunny link'] || videoData.link) && String(videoData['bunny link'] || videoData.link).trim().toLowerCase() !== "nan") {
                     validItems.push({ normId, videoData });
                 }
             });
 
             if (validItems.length === 0) {
-                containerElement.innerHTML = "<p style='text-align:center;'>لا توجد فيديوهات متاحة في هذه القائمة حالياً.</p>";
+                containerElement.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
                 return;
             }
 
@@ -333,7 +383,6 @@
                     let videoLink = String(videoData['bunny link'] || videoData.link).trim();
                     let safeLinkHtml = "";
                     
-                    // فحص ما إذا كان الرابط مجرد (يبدأ بـ http) أو كود iframe جاهز
                     if (videoLink.startsWith("http")) {
                         let embedUrl = videoLink.replace("/play/", "/embed/");
                         safeLinkHtml = `<div style="position:relative;padding-top:56.25%;"><iframe src="${embedUrl}?autoplay=false&loop=false&muted=false&preload=false&responsive=true" loading="lazy" style="border:0;position:absolute;top:0;height:100%;width:100%;" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowfullscreen="true"></iframe></div>`;
@@ -344,30 +393,55 @@
                     const isWatched = watchedVideos.includes(normId);
                     const isFav = favoriteVideos.includes(normId);
                     
+                    // تأمين النص ضد علامات الاقتباس المفردة لتجنب كسر onclick
+                    const safeNormId = normId.replace(/'/g, "\\'");
                     const attachments = getVideoAttachments(videoData);
                     let attachBtnHtml = "";
                     if (attachments.length > 0) {
-                        const attData = encodeURIComponent(JSON.stringify(attachments));
+                        const attData = encodeURIComponent(JSON.stringify(attachments)).replace(/'/g, "%27");
                         attachBtnHtml = `<button class="btn attach" onclick="openAttachments('${attData}')">🔗 ملحقات</button>`;
                     }
                     
-                    card.innerHTML = `
-                        <div class="video-title">${(i + index + 1)}. ${videoData.question}</div>
-                        <div class="video-container">${safeLinkHtml}</div>
-                        <div class="actions">
-                            <button class="btn watched ${isWatched ? 'active' : ''}" data-id="${normId}" onclick="toggleAction(this, '${normId}', 'watched')">
-                                ${isWatched ? '✅ شاهدته' : '✔️ شاهدته'}
-                            </button>
-                            <button class="btn fav ${isFav ? 'active' : ''}" data-id="${normId}" onclick="toggleAction(this, '${normId}', 'favorite')">
-                                ${isFav ? '⭐ مهتم' : '📌 مهتم'}
-                            </button>
-                            ${attachBtnHtml}
-                        </div>
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'video-title';
+                    titleDiv.textContent = `${(i + index + 1)}. ${videoData.question || ''}`;
+                    
+                    const videoContainerDiv = document.createElement('div');
+                    videoContainerDiv.className = 'video-container';
+                    videoContainerDiv.innerHTML = safeLinkHtml;
+                    
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'actions';
+                    actionsDiv.innerHTML = `
+                        <button class="btn watched ${isWatched ? 'active' : ''}" data-id="${normId}" onclick="toggleAction(this, '${safeNormId}', 'watched')">
+                            ${isWatched ? '✅ شاهدته' : '✔️ شاهدته'}
+                        </button>
+                        <button class="btn fav ${isFav ? 'active' : ''}" data-id="${normId}" onclick="toggleAction(this, '${safeNormId}', 'favorite')">
+                            ${isFav ? '⭐ مهتم' : '📌 مهتم'}
+                        </button>
+                        ${attachBtnHtml}
                     `;
+
+                    card.appendChild(titleDiv);
+                    card.appendChild(videoContainerDiv);
+                    card.appendChild(actionsDiv);
                     details.appendChild(card);
                 });
                 containerElement.appendChild(details);
             }
+        }
+
+        async function fetchVideosData() {
+            // كاش ساعي بدلاً من كل ثانية لتوفير الباقة وتسريع التحميل
+            const cacheHour = Math.floor(Date.now() / 3600000);
+            try {
+                // محاولة الجلب من نفس النطاق أولاً (أسرع وأضمن)
+                const localRes = await fetch(`./qa_data.json?v=${cacheHour}`);
+                if (localRes.ok) return await localRes.json();
+            } catch (e) {}
+            // البديل الاحتياطي من GitHub Raw
+            const ghRes = await fetch(`https://raw.githubusercontent.com/hanygharba/Bot-mini-app/main/qa_data.json?v=${cacheHour}`);
+            return await ghRes.json();
         }
 
         async function initApp() {
@@ -380,7 +454,9 @@
 
             try {
                 if (TELEGRAM_ID !== 0) {
-                    const stateRes = await fetch(`${API_BASE}/user_state/${TELEGRAM_ID}`);
+                    const stateRes = await fetch(`${API_BASE}/user_state/${TELEGRAM_ID}`, {
+                        headers: { 'X-Telegram-Init-Data': INIT_DATA }
+                    });
                     if (stateRes.ok) {
                         const stateData = await stateRes.json();
                         watchedVideos = (stateData.watched || []).map(normalizeId);
@@ -399,14 +475,13 @@
                 const shortIds = urlParams.get('s') ? urlParams.get('s').split(',').map(normalizeId).filter(Boolean) : [];
                 const longIds = urlParams.get('l') ? urlParams.get('l').split(',').map(normalizeId).filter(Boolean) : [];
 
-                // إضافة ?t=timestamp لمنع متصفح تيليجرام من قراءة نسخة قديمة مخزنة في الكاش (Cache Busting)
-                const response = await fetch(`https://raw.githubusercontent.com/hanygharba/Bot-mini-app/main/qa_data.json?t=${Date.now()}`); 
-                const allVideos = await response.json();
-                const allIds = allVideos.map(v => normalizeId(v.id)).filter(id => !id.startsWith("[Intro_"));
+                allVideosGlobal = await fetchVideosData();
+                const allIds = allVideosGlobal.map(v => normalizeId(v.id)).filter(id => !id.startsWith("[Intro_"));
 
-                renderVideoCards(shortIds, allVideos, document.getElementById('short-content'));
-                renderVideoCards(longIds, allVideos, document.getElementById('long-content'));
-                renderVideoCards(allIds, allVideos, document.getElementById('all-content'));
+                renderVideoCards(shortIds, allVideosGlobal, document.getElementById('short-content'));
+                renderVideoCards(longIds, allVideosGlobal, document.getElementById('long-content'));
+                renderVideoCards(allIds, allVideosGlobal, document.getElementById('all-content'));
+                renderFavoritesTab();
 
                 updateProgress();
             } catch (error) {

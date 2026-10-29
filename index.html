@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>خطة الاستشارة وقائمة التشغيل</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -19,7 +19,7 @@
             --surface-muted: rgba(142, 142, 147, 0.15);
         }
 
-        /* --- حماية المحتوى ومنع التحديد --- */
+        /* --- حماية المحتوى ومنع النسخ والتحديد --- */
         * {
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -40,7 +40,6 @@
             color: var(--text-color);
             margin: 0;
             padding: 15px;
-            overflow-x: hidden;
         }
 
         .header { text-align: center; margin-bottom: 15px; }
@@ -160,9 +159,7 @@
             justify-content: space-between;
             align-items: center;
             outline: none;
-            list-style: none;
         }
-        .group-summary::-webkit-details-marker { display: none; }
         details { margin-bottom: 15px; }
         
         .card {
@@ -174,13 +171,9 @@
             border: 1px solid var(--border-color);
             transition: border-color 0.3s;
         }
-        /* البطاقة المشاهدة: بدون تقليل شفافية الفيديو نهائياً */
+        /* تمييز البطاقة المشاهدة بإطار فقط دون المساس بشفافية أو ألوان الفيديو */
         .card.watched-card {
-            border-color: var(--accent-color);
-            background-color: rgba(42, 157, 143, 0.04);
-        }
-        .card.watched-card .video-title {
-            opacity: 0.65;
+            border: 1.5px solid var(--accent-color);
         }
         .video-title {
             font-size: 15px;
@@ -188,32 +181,28 @@
             margin-bottom: 12px;
             line-height: 1.5;
             color: var(--text-color);
-            transition: opacity 0.3s;
         }
         
-        /* حاوية الفيديو بصورتها الطبيعية 100% دائماً */
         .video-container {
             width: 100%;
-            border-radius: 10px;
+            border-radius: 8px;
             overflow: hidden;
             margin-bottom: 12px;
             background-color: #000;
-            position: relative;
-            opacity: 1 !important;
+            display: block;
         }
+        video { width: 100%; display: block; outline: none; }
 
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .btn {
-            flex: 1; min-width: 28%; padding: 10px 8px; border: 1px solid var(--border-color); border-radius: 8px;
-            font-size: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
+            flex: 1; min-width: 30%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;
+            font-size: 13px; cursor: pointer; font-weight: 600; transition: 0.2s;
             background-color: var(--surface-muted); color: var(--text-color);
-            text-align: center;
         }
         .btn:active { transform: scale(0.96); }
         .btn.watched.active { background-color: var(--accent-color); color: #fff; border-color: transparent; }
         .btn.fav.active { background-color: var(--fav-color); color: #fff; border-color: transparent; }
         .btn.attach { background-color: #4a69bd; color: #fff; border-color: transparent; }
-        .btn.fullscreen-btn { background-color: transparent; color: var(--hint-color); flex: 0.6; min-width: auto; }
         
         .empty-state {
             text-align: center;
@@ -251,7 +240,7 @@
             50% { opacity: 1; }
         }
 
-        /* Bottom Sheet للملحقات + نافذة ملء الشاشة الكاملة */
+        /* نافذة الملحقات (Bottom Sheet) */
         .modal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.6); justify-content: center; align-items: flex-end;
@@ -274,20 +263,6 @@
         .close-btn {
             width: 100%; margin-top: 15px; padding: 12px; background-color: #e74c3c;
             border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;
-        }
-
-        /* مشغل ملء الشاشة المخصص داخل التطبيق (البديل المضمون لكل الهواتف) */
-        .fs-overlay {
-            display: none; position: fixed; z-index: 2000; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #000; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .fs-close {
-            position: absolute; top: 15px; right: 15px; z-index: 2010;
-            background: rgba(231, 76, 60, 0.9); color: #fff; border: none;
-            padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer;
-        }
-        .fs-iframe-wrap {
-            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
         }
     </style>
 </head>
@@ -338,12 +313,6 @@
             <div id="attachLinksContainer"></div>
             <button class="close-btn" onclick="document.getElementById('attachModal').style.display='none'">إغلاق</button>
         </div>
-    </div>
-
-    <!-- شاشة التكبير الكاملة (Fullscreen Modal) -->
-    <div id="fsOverlay" class="fs-overlay">
-        <button class="fs-close" onclick="closeCustomFullscreen()">✕ إغلاق التكبير</button>
-        <div id="fsIframeContainer" class="fs-iframe-wrap"></div>
     </div>
 
     <script>
@@ -401,61 +370,6 @@
             if (!s) return "";
             const num = Number(s);
             return !isNaN(num) ? String(num) : s;
-        }
-
-        // استخراج رابط الـ Embed النظيف وضبط الصوت وعدم الكتم وتصاريح ملء الشاشة
-        function extractCleanEmbedUrl(rawInput) {
-            let str = String(rawInput || "").trim();
-            const srcMatch = str.match(/src=["']([^"']+)["']/i);
-            let url = srcMatch ? srcMatch[1] : str;
-            url = url.replace("/play/", "/embed/");
-            
-            // إزالة أي إعدادات سابقة تسبب كتم الصوت أو التشغيل التلقائي المجبر على الكتم
-            let baseUrl = url.split('?')[0];
-            return `${baseUrl}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`;
-        }
-
-        function buildVideoIframeHtml(rawInput) {
-            const cleanUrl = extractCleanEmbedUrl(rawInput);
-            if (cleanUrl.startsWith("http")) {
-                return `<div style="position:relative;padding-top:56.25%;"><iframe src="${cleanUrl}" loading="lazy" style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" allow="fullscreen; accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe></div>`;
-            }
-            return rawInput;
-        }
-
-        // فتح الفيديو في وضع ملء الشاشة الكامل (يعمل على كل الهواتف 100%)
-        function openCustomFullscreen(encodedRawLink, containerBtn) {
-            triggerHaptic('light');
-            const card = containerBtn.closest('.card');
-            const existingIframe = card ? card.querySelector('iframe') : null;
-
-            // محاولة تفعيل Fullscreen الأصلي للمتصفح أولاً إن كان مدعوماً
-            if (existingIframe) {
-                const reqFs = existingIframe.requestFullscreen || existingIframe.webkitRequestFullscreen || existingIframe.msRequestFullscreen;
-                if (reqFs) {
-                    try {
-                        reqFs.call(existingIframe);
-                        return;
-                    } catch (e) {}
-                }
-            }
-
-            // البديل المضمون داخل WebView تيليجرام: شاشة كاملة داخل التطبيق
-            const rawLink = decodeURIComponent(encodedRawLink);
-            const cleanUrl = extractCleanEmbedUrl(rawLink);
-            const fsOverlay = document.getElementById('fsOverlay');
-            const fsContainer = document.getElementById('fsIframeContainer');
-            
-            fsContainer.innerHTML = `<iframe src="${cleanUrl}" style="border:0;width:100%;height:100%;" allow="fullscreen; accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen="true" webkitallowfullscreen="true"></iframe>`;
-            fsOverlay.style.display = 'flex';
-        }
-
-        function closeCustomFullscreen() {
-            triggerHaptic('light');
-            const fsOverlay = document.getElementById('fsOverlay');
-            const fsContainer = document.getElementById('fsIframeContainer');
-            fsContainer.innerHTML = "";
-            fsOverlay.style.display = 'none';
         }
 
         async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
@@ -588,7 +502,7 @@
                 localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
             }
 
-            const allRelatedButtons = document.querySelectorAll(`button[data-id="${normId}"]`);
+            const allRelatedButtons = document.querySelectorAll(`button[data-id="${CSS.escape(normId)}"]`);
             allRelatedButtons.forEach(btn => {
                 if (btn.classList.contains(actionType === 'watched' ? 'watched' : 'fav')) {
                     if (willBeActive) {
@@ -640,14 +554,12 @@
                 itemDiv.style.textAlign = "right";
                 
                 if (att.link && att.link.trim() !== "") {
-                    let a = document.createElement('div');
+                    let a = document.createElement('a');
                     a.className = 'attach-link';
+                    a.href = att.link.trim();
+                    a.target = "_blank";
+                    a.rel = "noopener noreferrer";
                     a.textContent = `🔗 ${att.name || 'ملحق'}`;
-                    a.onclick = () => {
-                        const targetUrl = att.link.trim();
-                        if (tg.openLink) tg.openLink(targetUrl);
-                        else window.open(targetUrl, '_blank', 'noopener,noreferrer');
-                    };
                     itemDiv.appendChild(a);
                 } else {
                     let span = document.createElement('div');
@@ -673,7 +585,7 @@
             document.getElementById('attachModal').style.display = 'flex';
         }
 
-        function renderVideoCards(idsArray, allVideosData, containerElement, emptyMessage = "لا توجد فيديوهات مطابقة.") {
+        function renderVideoCards(idsArray, allVideosData, containerElement, emptyMessage = "لا توجد فيديوهات في هذه القائمة.") {
             containerElement.innerHTML = "";
             if (!idsArray || idsArray.length === 0) {
                 containerElement.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
@@ -730,8 +642,18 @@
                     const card = document.createElement('div');
                     card.className = `card ${isWatched ? 'watched-card' : ''}`;
                     
+                    // نفس طريقة الكود الأصلي تماماً مع إلغاء الكتم الإجباري فقط
                     let videoLink = String(videoData['bunny link'] || videoData.link).trim();
-                    const encodedRawLink = encodeURIComponent(videoLink).replace(/'/g, "%27");
+                    let safeLinkHtml = "";
+                    
+                    if (videoLink.startsWith("http")) {
+                        let embedUrl = videoLink.replace("/play/", "/embed/");
+                        safeLinkHtml = `<div style="position:relative;padding-top:56.25%;"><iframe src="${embedUrl}?autoplay=false&loop=false&muted=false&preload=false&responsive=true" loading="lazy" style="border:0;position:absolute;top:0;height:100%;width:100%;" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowfullscreen="true"></iframe></div>`;
+                    } else {
+                        safeLinkHtml = videoLink
+                            .replace(/autoplay=true/gi, "autoplay=false")
+                            .replace(/muted=true/gi, "muted=false");
+                    }
                     
                     const safeNormId = normId.replace(/'/g, "\\'");
                     const attachments = getVideoAttachments(videoData);
@@ -747,7 +669,7 @@
                     
                     const videoContainerDiv = document.createElement('div');
                     videoContainerDiv.className = 'video-container';
-                    videoContainerDiv.innerHTML = buildVideoIframeHtml(videoLink);
+                    videoContainerDiv.innerHTML = safeLinkHtml;
                     
                     const actionsDiv = document.createElement('div');
                     actionsDiv.className = 'actions';
@@ -759,9 +681,6 @@
                             ${isFav ? '⭐ مهتم' : '📌 مهتم'}
                         </button>
                         ${attachBtnHtml}
-                        <button class="btn fullscreen-btn" onclick="openCustomFullscreen('${encodedRawLink}', this)" title="تكبير الشاشة">
-                            ⛶ تكبير
-                        </button>
                     `;
 
                     card.appendChild(titleDiv);
@@ -840,11 +759,7 @@
             }
         }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initApp);
-        } else {
-            initApp();
-        }
+        window.onload = initApp;
     </script>
 </body>
 </html>

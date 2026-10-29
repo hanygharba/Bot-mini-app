@@ -172,64 +172,48 @@
             margin-bottom: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             border: 1px solid var(--border-color);
+            transition: border-color 0.3s;
+        }
+        /* البطاقة المشاهدة: بدون تقليل شفافية الفيديو نهائياً */
+        .card.watched-card {
+            border-color: var(--accent-color);
+            background-color: rgba(42, 157, 143, 0.04);
+        }
+        .card.watched-card .video-title {
+            opacity: 0.65;
+        }
+        .video-title {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 12px;
+            line-height: 1.5;
+            color: var(--text-color);
             transition: opacity 0.3s;
         }
-        .card.watched-card {
-            opacity: 0.75;
-            border-color: var(--accent-color);
-        }
-        .video-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; line-height: 1.5; color: var(--text-color); }
         
-        /* واجهة الفيديو السريعة (Video Facade) */
+        /* حاوية الفيديو بصورتها الطبيعية 100% دائماً */
         .video-container {
             width: 100%;
             border-radius: 10px;
             overflow: hidden;
             margin-bottom: 12px;
-            background-color: #111;
+            background-color: #000;
             position: relative;
+            opacity: 1 !important;
         }
-        .video-facade {
-            position: relative;
-            padding-top: 56.25%;
-            background: linear-gradient(135deg, #1e272e, #0f1419);
-            cursor: pointer;
-        }
-        .play-overlay {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0,0,0,0.2);
-            transition: 0.2s;
-        }
-        .play-btn-circle {
-            width: 54px;
-            height: 54px;
-            border-radius: 50%;
-            background-color: var(--accent-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-            font-size: 20px;
-            color: #fff;
-            margin-bottom: 8px;
-        }
-        .play-hint { font-size: 12px; color: #e0e0e0; font-weight: 500; }
 
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .btn {
-            flex: 1; min-width: 30%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;
-            font-size: 13px; cursor: pointer; font-weight: 600; transition: 0.2s;
+            flex: 1; min-width: 28%; padding: 10px 8px; border: 1px solid var(--border-color); border-radius: 8px;
+            font-size: 12px; cursor: pointer; font-weight: 600; transition: 0.2s;
             background-color: var(--surface-muted); color: var(--text-color);
+            text-align: center;
         }
         .btn:active { transform: scale(0.96); }
         .btn.watched.active { background-color: var(--accent-color); color: #fff; border-color: transparent; }
         .btn.fav.active { background-color: var(--fav-color); color: #fff; border-color: transparent; }
         .btn.attach { background-color: #4a69bd; color: #fff; border-color: transparent; }
+        .btn.fullscreen-btn { background-color: transparent; color: var(--hint-color); flex: 0.6; min-width: auto; }
         
         .empty-state {
             text-align: center;
@@ -241,7 +225,7 @@
             line-height: 1.6;
         }
 
-        /* Skeleton Loading متوافق مع الوضع الفاتح والداكن */
+        /* Skeleton Loading */
         .skeleton-card {
             background-color: var(--card-bg);
             border-radius: 12px;
@@ -267,7 +251,7 @@
             50% { opacity: 1; }
         }
 
-        /* Bottom Sheet للملحقات */
+        /* Bottom Sheet للملحقات + نافذة ملء الشاشة الكاملة */
         .modal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.6); justify-content: center; align-items: flex-end;
@@ -290,6 +274,20 @@
         .close-btn {
             width: 100%; margin-top: 15px; padding: 12px; background-color: #e74c3c;
             border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;
+        }
+
+        /* مشغل ملء الشاشة المخصص داخل التطبيق (البديل المضمون لكل الهواتف) */
+        .fs-overlay {
+            display: none; position: fixed; z-index: 2000; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: #000; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .fs-close {
+            position: absolute; top: 15px; right: 15px; z-index: 2010;
+            background: rgba(231, 76, 60, 0.9); color: #fff; border: none;
+            padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; cursor: pointer;
+        }
+        .fs-iframe-wrap {
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
         }
     </style>
 </head>
@@ -342,6 +340,12 @@
         </div>
     </div>
 
+    <!-- شاشة التكبير الكاملة (Fullscreen Modal) -->
+    <div id="fsOverlay" class="fs-overlay">
+        <button class="fs-close" onclick="closeCustomFullscreen()">✕ إغلاق التكبير</button>
+        <div id="fsIframeContainer" class="fs-iframe-wrap"></div>
+    </div>
+
     <script>
         let tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : { expand: () => {}, initDataUnsafe: {}, initData: "" };
         try { tg.expand(); } catch(e) {}
@@ -368,7 +372,6 @@
             }
         });
 
-        // --- الإعدادات والمتغيرات ---
         const API_BASE = "https://api.hanygharba.com";
         const TELEGRAM_ID = tg.initDataUnsafe?.user?.id || 0;
         const INIT_DATA = tg.initData || "";
@@ -400,7 +403,61 @@
             return !isNaN(num) ? String(num) : s;
         }
 
-        // دالة مساعدة للاتصال بالسيرفر بمهلة محددة (Timeout) حتى لا يعلق التطبيق أبداً
+        // استخراج رابط الـ Embed النظيف وضبط الصوت وعدم الكتم وتصاريح ملء الشاشة
+        function extractCleanEmbedUrl(rawInput) {
+            let str = String(rawInput || "").trim();
+            const srcMatch = str.match(/src=["']([^"']+)["']/i);
+            let url = srcMatch ? srcMatch[1] : str;
+            url = url.replace("/play/", "/embed/");
+            
+            // إزالة أي إعدادات سابقة تسبب كتم الصوت أو التشغيل التلقائي المجبر على الكتم
+            let baseUrl = url.split('?')[0];
+            return `${baseUrl}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`;
+        }
+
+        function buildVideoIframeHtml(rawInput) {
+            const cleanUrl = extractCleanEmbedUrl(rawInput);
+            if (cleanUrl.startsWith("http")) {
+                return `<div style="position:relative;padding-top:56.25%;"><iframe src="${cleanUrl}" loading="lazy" style="border:0;position:absolute;top:0;left:0;height:100%;width:100%;" allow="fullscreen; accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen="true" webkitallowfullscreen="true" mozallowfullscreen="true"></iframe></div>`;
+            }
+            return rawInput;
+        }
+
+        // فتح الفيديو في وضع ملء الشاشة الكامل (يعمل على كل الهواتف 100%)
+        function openCustomFullscreen(encodedRawLink, containerBtn) {
+            triggerHaptic('light');
+            const card = containerBtn.closest('.card');
+            const existingIframe = card ? card.querySelector('iframe') : null;
+
+            // محاولة تفعيل Fullscreen الأصلي للمتصفح أولاً إن كان مدعوماً
+            if (existingIframe) {
+                const reqFs = existingIframe.requestFullscreen || existingIframe.webkitRequestFullscreen || existingIframe.msRequestFullscreen;
+                if (reqFs) {
+                    try {
+                        reqFs.call(existingIframe);
+                        return;
+                    } catch (e) {}
+                }
+            }
+
+            // البديل المضمون داخل WebView تيليجرام: شاشة كاملة داخل التطبيق
+            const rawLink = decodeURIComponent(encodedRawLink);
+            const cleanUrl = extractCleanEmbedUrl(rawLink);
+            const fsOverlay = document.getElementById('fsOverlay');
+            const fsContainer = document.getElementById('fsIframeContainer');
+            
+            fsContainer.innerHTML = `<iframe src="${cleanUrl}" style="border:0;width:100%;height:100%;" allow="fullscreen; accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;" allowfullscreen="true" webkitallowfullscreen="true"></iframe>`;
+            fsOverlay.style.display = 'flex';
+        }
+
+        function closeCustomFullscreen() {
+            triggerHaptic('light');
+            const fsOverlay = document.getElementById('fsOverlay');
+            const fsContainer = document.getElementById('fsIframeContainer');
+            fsContainer.innerHTML = "";
+            fsOverlay.style.display = 'none';
+        }
+
         async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
             const controller = new AbortController();
             const id = setTimeout(() => controller.abort(), timeoutMs);
@@ -507,20 +564,6 @@
             renderVideoCards(longIdsGlobal, allVideosGlobal, document.getElementById('long-content'));
             renderVideoCards(allIdsGlobal, allVideosGlobal, document.getElementById('all-content'));
             renderFavoritesTab();
-        }
-
-        function loadVideoIframe(facadeElement, encodedUrl) {
-            triggerHaptic('light');
-            const videoLink = decodeURIComponent(encodedUrl);
-            const container = facadeElement.parentElement;
-            
-            if (videoLink.startsWith("http")) {
-                let embedUrl = videoLink.replace("/play/", "/embed/");
-                const joiner = embedUrl.includes('?') ? '&' : '?';
-                container.innerHTML = `<div style="position:relative;padding-top:56.25%;"><iframe src="${embedUrl}${joiner}autoplay=true&loop=false&muted=false&preload=true&responsive=true" style="border:0;position:absolute;top:0;height:100%;width:100%;" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowfullscreen="true"></iframe></div>`;
-            } else {
-                container.innerHTML = videoLink;
-            }
         }
 
         async function toggleAction(clickedButton, videoId, actionType) {
@@ -688,16 +731,7 @@
                     card.className = `card ${isWatched ? 'watched-card' : ''}`;
                     
                     let videoLink = String(videoData['bunny link'] || videoData.link).trim();
-                    const encodedLink = encodeURIComponent(videoLink).replace(/'/g, "%27");
-
-                    const facadeHtml = `
-                        <div class="video-facade" onclick="loadVideoIframe(this, '${encodedLink}')">
-                            <div class="play-overlay">
-                                <div class="play-btn-circle">▶</div>
-                                <span class="play-hint">اضغط لتشغيل الفيديو</span>
-                            </div>
-                        </div>
-                    `;
+                    const encodedRawLink = encodeURIComponent(videoLink).replace(/'/g, "%27");
                     
                     const safeNormId = normId.replace(/'/g, "\\'");
                     const attachments = getVideoAttachments(videoData);
@@ -713,7 +747,7 @@
                     
                     const videoContainerDiv = document.createElement('div');
                     videoContainerDiv.className = 'video-container';
-                    videoContainerDiv.innerHTML = facadeHtml;
+                    videoContainerDiv.innerHTML = buildVideoIframeHtml(videoLink);
                     
                     const actionsDiv = document.createElement('div');
                     actionsDiv.className = 'actions';
@@ -725,6 +759,9 @@
                             ${isFav ? '⭐ مهتم' : '📌 مهتم'}
                         </button>
                         ${attachBtnHtml}
+                        <button class="btn fullscreen-btn" onclick="openCustomFullscreen('${encodedRawLink}', this)" title="تكبير الشاشة">
+                            ⛶ تكبير
+                        </button>
                     `;
 
                     card.appendChild(titleDiv);
@@ -736,7 +773,6 @@
             }
         }
 
-        // جلب آمن جداً لملف البيانات مع التحويل التلقائي لـ GitHub عند أي خطأ
         async function fetchVideosData() {
             const cacheHour = Math.floor(Date.now() / 3600000);
             try {
@@ -745,16 +781,13 @@
                     const data = await localRes.json();
                     if (Array.isArray(data) && data.length > 0) return data;
                 }
-            } catch (e) {
-                console.warn("جاري التحويل للرابط الاحتياطي...");
-            }
+            } catch (e) {}
             
             const ghRes = await fetchWithTimeout(`https://raw.githubusercontent.com/hanygharba/Bot-mini-app/main/qa_data.json?v=${cacheHour}`, {}, 8000);
             if (!ghRes.ok) throw new Error("تعذر جلب ملف البيانات");
             return await ghRes.json();
         }
 
-        // مزامنة السيرفر في الخلفية بدون تعطيل تحميل الفيديوهات
         async function syncUserStateInBackground() {
             if (!TELEGRAM_ID || TELEGRAM_ID === 0) return;
             try {
@@ -772,13 +805,10 @@
                     renderAllTabs();
                     updateProgress(false);
                 }
-            } catch (e) {
-                console.warn("السيرفر غير متصل، يتم استخدام الذاكرة المحلية.");
-            }
+            } catch (e) {}
         }
 
         async function initApp() {
-            // 1. قراءة الذاكرة المحلية فوراً
             try {
                 const lw = localStorage.getItem(`watched_${TELEGRAM_ID}`);
                 const lf = localStorage.getItem(`fav_${TELEGRAM_ID}`);
@@ -786,7 +816,6 @@
                 if (lf) favoriteVideos = JSON.parse(lf).map(normalizeId);
             } catch (e) {}
 
-            // 2. جلب الفيديوهات وعرضها فوراً دون انتظار السيرفر
             try {
                 const urlParams = new URLSearchParams(window.location.search);
                 shortIdsGlobal = urlParams.get('s') ? urlParams.get('s').split(',').map(normalizeId).filter(Boolean) : [];
@@ -795,7 +824,6 @@
                 allVideosGlobal = await fetchVideosData();
                 allIdsGlobal = allVideosGlobal.map(v => normalizeId(v.id)).filter(id => !id.startsWith("[Intro_"));
 
-                // إذا فُتح التطبيق بدون روابط مخصصة، نضع أول 7 فيديوهات افتراضياً حتى لا تظهر الشاشة فارغة
                 if (shortIdsGlobal.length === 0 && allIdsGlobal.length > 0) {
                     shortIdsGlobal = allIdsGlobal.slice(0, 7);
                 }
@@ -805,11 +833,8 @@
 
                 renderAllTabs();
                 updateProgress(false);
-
-                // 3. بعد ظهور الفيديوهات، نحدث حالة المستخدم من السيرفر في الخلفية
                 syncUserStateInBackground();
             } catch (error) {
-                console.error("Load error:", error);
                 document.getElementById('progress-text').innerText = "تعذر التحميل";
                 document.getElementById('short-content').innerHTML = `<div class='empty-state'>⚠️ تعذر تحميل قائمة الفيديوهات.<br><small>${error.message || ''}</small></div>`;
             }

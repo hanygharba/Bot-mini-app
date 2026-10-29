@@ -12,9 +12,11 @@
             --text-color: var(--tg-theme-text-color, #ffffff);
             --card-bg: var(--tg-theme-secondary-bg-color, #2c2c2e);
             --accent-color: var(--tg-theme-button-color, #2a9d8f);
+            --accent-text: var(--tg-theme-button-text-color, #ffffff);
             --fav-color: #f39c12;
-            --border-color: #3a3a3c;
             --hint-color: var(--tg-theme-hint-color, #8e8e93);
+            --border-color: rgba(142, 142, 147, 0.25);
+            --surface-muted: rgba(142, 142, 147, 0.15);
         }
 
         /* --- حماية المحتوى ومنع التحديد --- */
@@ -27,7 +29,6 @@
             box-sizing: border-box;
         }
         
-        /* السماح بالكتابة في حقل البحث فقط */
         input.search-input {
             -webkit-user-select: text;
             user-select: text;
@@ -70,7 +71,7 @@
             white-space: nowrap;
         }
         .tab-btn.fav-tab { flex: 0.45; font-size: 15px; }
-        .tab-btn.active { background-color: var(--accent-color); color: #fff; }
+        .tab-btn.active { background-color: var(--accent-color); color: var(--accent-text); }
         .tab-btn.fav-tab.active { background-color: var(--fav-color); color: #fff; }
 
         /* شريط التقدم الذكي */
@@ -83,7 +84,7 @@
             top: 10px;
             z-index: 100;
             border: 1px solid var(--border-color);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
         .progress-info {
             display: flex;
@@ -94,7 +95,7 @@
             color: var(--text-color);
         }
         .progress-track {
-            background: #3a3a3c;
+            background: var(--surface-muted);
             border-radius: 10px;
             height: 8px;
             overflow: hidden;
@@ -139,7 +140,7 @@
         .filter-toggle-btn.active {
             background-color: var(--accent-color);
             border-color: var(--accent-color);
-            color: #fff;
+            color: var(--accent-text);
         }
 
         .tab-content { display: none; }
@@ -147,8 +148,9 @@
 
         /* المجموعات والبطاقات */
         .group-summary {
-            background-color: #3a3a3c;
-            color: white;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
             padding: 12px 14px;
             border-radius: 10px;
             cursor: pointer;
@@ -168,15 +170,15 @@
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             border: 1px solid var(--border-color);
-            transition: opacity 0.3s, transform 0.2s;
+            transition: opacity 0.3s;
         }
         .card.watched-card {
             opacity: 0.75;
-            border-color: rgba(42, 157, 143, 0.4);
+            border-color: var(--accent-color);
         }
-        .video-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; line-height: 1.5; }
+        .video-title { font-size: 15px; font-weight: bold; margin-bottom: 12px; line-height: 1.5; color: var(--text-color); }
         
         /* واجهة الفيديو السريعة (Video Facade) */
         .video-container {
@@ -200,35 +202,34 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0,0,0,0.25);
+            background: rgba(0,0,0,0.2);
             transition: 0.2s;
         }
-        .video-facade:hover .play-overlay { background: rgba(0,0,0,0.1); }
         .play-btn-circle {
-            width: 56px;
-            height: 56px;
+            width: 54px;
+            height: 54px;
             border-radius: 50%;
             background-color: var(--accent-color);
             display: flex;
             justify-content: center;
             align-items: center;
-            box-shadow: 0 4px 15px rgba(42, 157, 143, 0.5);
-            font-size: 22px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            font-size: 20px;
             color: #fff;
             margin-bottom: 8px;
         }
-        .play-hint { font-size: 12px; color: #ccc; }
+        .play-hint { font-size: 12px; color: #e0e0e0; font-weight: 500; }
 
         .actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .btn {
-            flex: 1; min-width: 30%; padding: 10px; border: none; border-radius: 8px;
+            flex: 1; min-width: 30%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;
             font-size: 13px; cursor: pointer; font-weight: 600; transition: 0.2s;
-            background-color: #3a3a3c; color: #ffffff;
+            background-color: var(--surface-muted); color: var(--text-color);
         }
         .btn:active { transform: scale(0.96); }
-        .btn.watched.active { background-color: var(--accent-color); }
-        .btn.fav.active { background-color: var(--fav-color); }
-        .btn.attach { background-color: #4a69bd; }
+        .btn.watched.active { background-color: var(--accent-color); color: #fff; border-color: transparent; }
+        .btn.fav.active { background-color: var(--fav-color); color: #fff; border-color: transparent; }
+        .btn.attach { background-color: #4a69bd; color: #fff; border-color: transparent; }
         
         .empty-state {
             text-align: center;
@@ -240,7 +241,7 @@
             line-height: 1.6;
         }
 
-        /* Skeleton Loading */
+        /* Skeleton Loading متوافق مع الوضع الفاتح والداكن */
         .skeleton-card {
             background-color: var(--card-bg);
             border-radius: 12px;
@@ -250,48 +251,41 @@
         }
         .skeleton-line {
             height: 16px;
-            background: linear-gradient(90deg, #3a3a3c 25%, #4a4a4c 50%, #3a3a3c 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
+            background: var(--surface-muted);
             border-radius: 6px;
             margin-bottom: 12px;
+            animation: pulse 1.2s infinite ease-in-out;
         }
         .skeleton-box {
-            height: 160px;
-            background: linear-gradient(90deg, #222 25%, #333 50%, #222 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
+            height: 150px;
+            background: var(--surface-muted);
             border-radius: 8px;
+            animation: pulse 1.2s infinite ease-in-out;
         }
-        @keyframes shimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
         }
 
         /* Bottom Sheet للملحقات */
         .modal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.65); justify-content: center; align-items: flex-end;
+            background-color: rgba(0,0,0,0.6); justify-content: center; align-items: flex-end;
             backdrop-filter: blur(2px);
         }
         .modal-content {
             background-color: var(--card-bg); padding: 20px; border-radius: 20px 20px 0 0;
             width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto;
             text-align: center; border-top: 1px solid var(--border-color);
-            animation: slideUp 0.25s ease-out;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
         }
         .sheet-handle {
-            width: 40px; height: 4px; background-color: #555;
-            border-radius: 4px; margin: 0 auto 15px auto;
+            width: 40px; height: 4px; background-color: var(--hint-color);
+            border-radius: 4px; margin: 0 auto 15px auto; opacity: 0.5;
         }
         .attach-link {
-            display: block; padding: 12px; background-color: #3a3a3c;
-            color: #fff; text-decoration: none; border-radius: 10px; font-weight: bold;
-            cursor: pointer; text-align: right;
+            display: block; padding: 12px; background-color: var(--surface-muted);
+            color: var(--text-color); text-decoration: none; border-radius: 10px; font-weight: bold;
+            cursor: pointer; text-align: right; border: 1px solid var(--border-color);
         }
         .close-btn {
             width: 100%; margin-top: 15px; padding: 12px; background-color: #e74c3c;
@@ -315,7 +309,7 @@
     <!-- شريط التقدم التفاعلي -->
     <div class="progress-wrapper">
         <div class="progress-info">
-            <span id="progress-text">جاري الحساب...</span>
+            <span id="progress-text">جاري تحميل القائمة...</span>
             <span id="progress-percent">0%</span>
         </div>
         <div class="progress-track">
@@ -329,7 +323,7 @@
         <button id="unwatchedFilterBtn" class="filter-toggle-btn" onclick="toggleUnwatchedFilter()">👁️ غير المشاهد</button>
     </div>
 
-    <!-- حاويات التبويبات مع الـ Skeleton المبدئي -->
+    <!-- حاويات التبويبات -->
     <div id="short-content" class="tab-content active">
         <div class="skeleton-card"><div class="skeleton-line"></div><div class="skeleton-box"></div></div>
         <div class="skeleton-card"><div class="skeleton-line"></div><div class="skeleton-box"></div></div>
@@ -338,7 +332,7 @@
     <div id="all-content" class="tab-content"></div>
     <div id="fav-content" class="tab-content"></div>
 
-    <!-- نافذة الملحقات (Bottom Sheet) -->
+    <!-- نافذة الملحقات -->
     <div id="attachModal" class="modal" onclick="if(event.target === this) this.style.display='none'">
         <div class="modal-content">
             <div class="sheet-handle"></div>
@@ -349,15 +343,10 @@
     </div>
 
     <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
+        let tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : { expand: () => {}, initDataUnsafe: {}, initData: "" };
+        try { tg.expand(); } catch(e) {}
 
-        // ==========================================
-        // 1. نظام حماية المحتوى ومنع النسخ والتفتيش
-        // ==========================================
-        const STRICT_TELEGRAM_ONLY = false; // اجعلها true عند الإطلاق النهائي لمنع الفتح من المتصفح العادي
-
-        // منع كليك يمين، النسخ، القص، السحب
+        // --- حماية المحتوى ومنع النسخ ---
         ['contextmenu', 'copy', 'cut', 'dragstart'].forEach(event => {
             document.addEventListener(event, function(e) {
                 if (e.target.tagName !== 'INPUT') {
@@ -367,7 +356,6 @@
             });
         });
 
-        // منع اختصارات لوحة المفاتيح (F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+C)
         document.addEventListener('keydown', function(e) {
             if (
                 e.key === 'F12' ||
@@ -380,9 +368,7 @@
             }
         });
 
-        // ==========================================
-        // 2. الإعدادات والبيانات الأساسية
-        // ==========================================
+        // --- الإعدادات والمتغيرات ---
         const API_BASE = "https://api.hanygharba.com";
         const TELEGRAM_ID = tg.initDataUnsafe?.user?.id || 0;
         const INIT_DATA = tg.initData || "";
@@ -396,7 +382,6 @@
         let onlyUnwatchedFilter = false;
         let celebratedTabs = {};
 
-        // هزاز تيليجرام الآمن
         function triggerHaptic(type = 'light') {
             try {
                 if (tg.HapticFeedback) {
@@ -413,6 +398,20 @@
             if (!s) return "";
             const num = Number(s);
             return !isNaN(num) ? String(num) : s;
+        }
+
+        // دالة مساعدة للاتصال بالسيرفر بمهلة محددة (Timeout) حتى لا يعلق التطبيق أبداً
+        async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
+            const controller = new AbortController();
+            const id = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                const response = await fetch(url, { ...options, signal: controller.signal });
+                clearTimeout(id);
+                return response;
+            } catch (err) {
+                clearTimeout(id);
+                throw err;
+            }
         }
 
         function getVideoAttachments(videoData) {
@@ -440,7 +439,6 @@
             }));
         }
 
-        // تحديث شريط التقدم + الاحتفال عند الـ 100%
         function updateProgress(triggerCelebration = false) {
             const activeContent = document.querySelector('.tab-content.active');
             if (!activeContent) return;
@@ -454,7 +452,7 @@
             document.getElementById('progress-percent').innerText = pct + '%';
             document.getElementById('progress-text').innerText = total > 0 
                 ? `أنجزت ${completed} من ${total} فيديوهات` 
-                : `لا توجد فيديوهات معروضة`;
+                : `لا توجد فيديوهات في هذا القسم`;
 
             if (triggerCelebration && total > 0 && pct === 100 && !celebratedTabs[activeTabId]) {
                 celebratedTabs[activeTabId] = true;
@@ -511,7 +509,6 @@
             renderFavoritesTab();
         }
 
-        // تحميل الفيديو فقط عند ضغط المستخدم (لحماية الرابط وتسريع الصفحة)
         function loadVideoIframe(facadeElement, encodedUrl) {
             triggerHaptic('light');
             const videoLink = decodeURIComponent(encodedUrl);
@@ -548,7 +545,7 @@
                 localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
             }
 
-            const allRelatedButtons = document.querySelectorAll(`button[data-id="${CSS.escape(normId)}"]`);
+            const allRelatedButtons = document.querySelectorAll(`button[data-id="${normId}"]`);
             allRelatedButtons.forEach(btn => {
                 if (btn.classList.contains(actionType === 'watched' ? 'watched' : 'fav')) {
                     if (willBeActive) {
@@ -570,7 +567,7 @@
 
             const payloadVideoId = !isNaN(Number(normId)) ? Number(normId) : normId;
             try {
-                await fetch(`${API_BASE}/toggle_action`, {
+                await fetchWithTimeout(`${API_BASE}/toggle_action`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -581,7 +578,7 @@
                         video_id: payloadVideoId,
                         action_type: actionType
                     })
-                });
+                }, 3000);
             } catch(e) {}
         }
 
@@ -655,3 +652,174 @@
                         validItems.push({ normId, videoData });
                     }
                 }
+            });
+
+            if (validItems.length === 0) {
+                containerElement.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
+                return;
+            }
+
+            const chunkSize = 10;
+            for (let i = 0; i < validItems.length; i += chunkSize) {
+                const chunk = validItems.slice(i, i + chunkSize);
+                
+                const details = document.createElement('details');
+                if (i === 0 || searchQuery !== "") details.open = true; 
+                
+                const watchedInChunk = chunk.filter(item => watchedVideos.includes(item.normId)).length;
+                const isGroupDone = watchedInChunk === chunk.length;
+
+                const summary = document.createElement('summary');
+                summary.className = 'group-summary';
+                summary.innerHTML = `
+                    <span>مجموعة ${(i/chunkSize)+1} (${chunk.length} فيديوهات)</span>
+                    <span style="font-size:12px; color:${isGroupDone ? '#2ecc71' : 'var(--hint-color)'};">
+                        ${isGroupDone ? '✅ مكتملة' : `${watchedInChunk}/${chunk.length}`}
+                    </span>
+                `;
+                details.appendChild(summary);
+
+                chunk.forEach((item, index) => {
+                    const { normId, videoData } = item;
+                    const isWatched = watchedVideos.includes(normId);
+                    const isFav = favoriteVideos.includes(normId);
+
+                    const card = document.createElement('div');
+                    card.className = `card ${isWatched ? 'watched-card' : ''}`;
+                    
+                    let videoLink = String(videoData['bunny link'] || videoData.link).trim();
+                    const encodedLink = encodeURIComponent(videoLink).replace(/'/g, "%27");
+
+                    const facadeHtml = `
+                        <div class="video-facade" onclick="loadVideoIframe(this, '${encodedLink}')">
+                            <div class="play-overlay">
+                                <div class="play-btn-circle">▶</div>
+                                <span class="play-hint">اضغط لتشغيل الفيديو</span>
+                            </div>
+                        </div>
+                    `;
+                    
+                    const safeNormId = normId.replace(/'/g, "\\'");
+                    const attachments = getVideoAttachments(videoData);
+                    let attachBtnHtml = "";
+                    if (attachments.length > 0) {
+                        const attData = encodeURIComponent(JSON.stringify(attachments)).replace(/'/g, "%27");
+                        attachBtnHtml = `<button class="btn attach" onclick="openAttachments('${attData}')">🔗 ملحقات (${attachments.length})</button>`;
+                    }
+                    
+                    const titleDiv = document.createElement('div');
+                    titleDiv.className = 'video-title';
+                    titleDiv.textContent = `${(i + index + 1)}. ${videoData.question || ''}`;
+                    
+                    const videoContainerDiv = document.createElement('div');
+                    videoContainerDiv.className = 'video-container';
+                    videoContainerDiv.innerHTML = facadeHtml;
+                    
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'actions';
+                    actionsDiv.innerHTML = `
+                        <button class="btn watched ${isWatched ? 'active' : ''}" data-id="${normId}" onclick="toggleAction(this, '${safeNormId}', 'watched')">
+                            ${isWatched ? '✅ شاهدته' : '✔️ شاهدته'}
+                        </button>
+                        <button class="btn fav ${isFav ? 'active' : ''}" data-id="${normId}" onclick="toggleAction(this, '${safeNormId}', 'favorite')">
+                            ${isFav ? '⭐ مهتم' : '📌 مهتم'}
+                        </button>
+                        ${attachBtnHtml}
+                    `;
+
+                    card.appendChild(titleDiv);
+                    card.appendChild(videoContainerDiv);
+                    card.appendChild(actionsDiv);
+                    details.appendChild(card);
+                });
+                containerElement.appendChild(details);
+            }
+        }
+
+        // جلب آمن جداً لملف البيانات مع التحويل التلقائي لـ GitHub عند أي خطأ
+        async function fetchVideosData() {
+            const cacheHour = Math.floor(Date.now() / 3600000);
+            try {
+                const localRes = await fetchWithTimeout(`./qa_data.json?v=${cacheHour}`, {}, 3500);
+                if (localRes.ok) {
+                    const data = await localRes.json();
+                    if (Array.isArray(data) && data.length > 0) return data;
+                }
+            } catch (e) {
+                console.warn("جاري التحويل للرابط الاحتياطي...");
+            }
+            
+            const ghRes = await fetchWithTimeout(`https://raw.githubusercontent.com/hanygharba/Bot-mini-app/main/qa_data.json?v=${cacheHour}`, {}, 8000);
+            if (!ghRes.ok) throw new Error("تعذر جلب ملف البيانات");
+            return await ghRes.json();
+        }
+
+        // مزامنة السيرفر في الخلفية بدون تعطيل تحميل الفيديوهات
+        async function syncUserStateInBackground() {
+            if (!TELEGRAM_ID || TELEGRAM_ID === 0) return;
+            try {
+                const stateRes = await fetchWithTimeout(`${API_BASE}/user_state/${TELEGRAM_ID}`, {
+                    headers: { 'X-Telegram-Init-Data': INIT_DATA }
+                }, 3500);
+                if (stateRes.ok) {
+                    const stateData = await stateRes.json();
+                    watchedVideos = (stateData.watched || []).map(normalizeId);
+                    favoriteVideos = (stateData.favorites || []).map(normalizeId);
+                    
+                    localStorage.setItem(`watched_${TELEGRAM_ID}`, JSON.stringify(watchedVideos));
+                    localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
+                    
+                    renderAllTabs();
+                    updateProgress(false);
+                }
+            } catch (e) {
+                console.warn("السيرفر غير متصل، يتم استخدام الذاكرة المحلية.");
+            }
+        }
+
+        async function initApp() {
+            // 1. قراءة الذاكرة المحلية فوراً
+            try {
+                const lw = localStorage.getItem(`watched_${TELEGRAM_ID}`);
+                const lf = localStorage.getItem(`fav_${TELEGRAM_ID}`);
+                if (lw) watchedVideos = JSON.parse(lw).map(normalizeId);
+                if (lf) favoriteVideos = JSON.parse(lf).map(normalizeId);
+            } catch (e) {}
+
+            // 2. جلب الفيديوهات وعرضها فوراً دون انتظار السيرفر
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                shortIdsGlobal = urlParams.get('s') ? urlParams.get('s').split(',').map(normalizeId).filter(Boolean) : [];
+                longIdsGlobal = urlParams.get('l') ? urlParams.get('l').split(',').map(normalizeId).filter(Boolean) : [];
+
+                allVideosGlobal = await fetchVideosData();
+                allIdsGlobal = allVideosGlobal.map(v => normalizeId(v.id)).filter(id => !id.startsWith("[Intro_"));
+
+                // إذا فُتح التطبيق بدون روابط مخصصة، نضع أول 7 فيديوهات افتراضياً حتى لا تظهر الشاشة فارغة
+                if (shortIdsGlobal.length === 0 && allIdsGlobal.length > 0) {
+                    shortIdsGlobal = allIdsGlobal.slice(0, 7);
+                }
+                if (longIdsGlobal.length === 0 && allIdsGlobal.length > 0) {
+                    longIdsGlobal = allIdsGlobal.slice(0, 20);
+                }
+
+                renderAllTabs();
+                updateProgress(false);
+
+                // 3. بعد ظهور الفيديوهات، نحدث حالة المستخدم من السيرفر في الخلفية
+                syncUserStateInBackground();
+            } catch (error) {
+                console.error("Load error:", error);
+                document.getElementById('progress-text').innerText = "تعذر التحميل";
+                document.getElementById('short-content').innerHTML = `<div class='empty-state'>⚠️ تعذر تحميل قائمة الفيديوهات.<br><small>${error.message || ''}</small></div>`;
+            }
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+    </script>
+</body>
+</html>

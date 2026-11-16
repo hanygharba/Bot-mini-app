@@ -598,7 +598,9 @@
             idsArray.forEach(rawId => {
                 const normId = normalizeId(rawId);
                 const videoData = allVideosData.find(v => normalizeId(v.id) === normId);
-                if (videoData && (videoData['bunny link'] || videoData.link) && String(videoData['bunny link'] || videoData.link).trim().toLowerCase() !== "nan") {
+                const bunnyLink = String(videoData ? (videoData['bunny link'] || videoData.link || '') : '').trim();
+
+                if (videoData && bunnyLink !== "" && bunnyLink.toLowerCase() !== "nan") {
                     const questionText = String(videoData.question || "").toLowerCase();
                     const matchesSearch = !searchQuery || questionText.includes(searchQuery);
                     const matchesUnwatched = !onlyUnwatchedFilter || !watchedVideos.includes(normId);

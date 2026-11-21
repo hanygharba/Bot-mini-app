@@ -17,6 +17,7 @@
             --hint-color: var(--tg-theme-hint-color, #8e8e93);
             --border-color: rgba(142, 142, 147, 0.25);
             --surface-muted: rgba(142, 142, 147, 0.15);
+            --success-color: #2ecc71;
         }
 
         /* --- حماية المحتوى ومنع النسخ والتحديد --- */
@@ -42,7 +43,7 @@
             padding: 15px;
         }
 
-        .header { text-align: center; margin-bottom: 15px; }
+        .header { text-align: center; margin-bottom: 12px; }
         .header h2 { margin: 5px 0; font-size: 20px; }
 
         /* التبويبات */
@@ -50,7 +51,7 @@
             display: flex;
             background-color: var(--card-bg);
             border-radius: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             overflow: hidden;
             border: 1px solid var(--border-color);
             padding: 4px;
@@ -73,14 +74,14 @@
         .tab-btn.active { background-color: var(--accent-color); color: var(--accent-text); }
         .tab-btn.fav-tab.active { background-color: var(--fav-color); color: #fff; }
 
-        /* شريط التقدم الذكي */
+        /* شريط التقدم الذكي + شارة الهدف الأسبوعي + بانر التهنئة */
         .progress-wrapper {
             background-color: var(--card-bg);
             padding: 10px 14px;
             border-radius: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             position: sticky;
-            top: 10px;
+            top: 8px;
             z-index: 100;
             border: 1px solid var(--border-color);
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -88,10 +89,35 @@
         .progress-info {
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            gap: 8px;
             font-size: 12px;
             font-weight: bold;
             margin-bottom: 6px;
             color: var(--text-color);
+        }
+        .progress-meta-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        /* شارة الهدف الأسبوعي (منذ السبت بتوقيت القاهرة) */
+        .weekly-badge {
+            display: none;
+            padding: 3px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            background-color: var(--surface-muted);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+        .weekly-badge.goal-met {
+            background-color: rgba(46, 204, 113, 0.18);
+            border-color: var(--success-color);
+            color: var(--success-color);
         }
         .progress-track {
             background: var(--surface-muted);
@@ -106,12 +132,73 @@
             border-radius: 10px;
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        /* بانر التهنئة عند إتمام 100% من القائمة */
+        .congrats-banner {
+            display: none;
+            margin-top: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(46, 204, 113, 0.16);
+            border: 1px solid rgba(46, 204, 113, 0.45);
+            color: var(--success-color);
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .congrats-banner.show { display: block; }
+
+        /* بطاقة «استكمل من حيث توقفت» أعلى تبويبي أهم 7 والمخصصة لك */
+        .next-up-card {
+            display: none;
+            background: linear-gradient(135deg, rgba(42, 157, 143, 0.16), var(--card-bg));
+            border: 1px solid var(--accent-color);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .next-up-card.show { display: flex; }
+        .next-up-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .next-up-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--accent-color);
+            margin-bottom: 4px;
+        }
+        .next-up-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .next-up-btn {
+            flex-shrink: 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background-color: var(--accent-color);
+            color: var(--accent-text);
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .next-up-btn:active { transform: scale(0.96); }
 
         /* البحث والفلترة */
         .filter-bar {
             display: flex;
             gap: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         .search-input {
             flex: 1;
@@ -137,6 +224,37 @@
             transition: 0.2s;
         }
         .filter-toggle-btn.active {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--accent-text);
+        }
+
+        /* شريط فلاتر المحاور الأفقية (يظهر في تبويب «الشاملة» فقط) */
+        .category-chips {
+            display: none;
+            gap: 6px;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            margin-bottom: 12px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .category-chips::-webkit-scrollbar { display: none; }
+        .category-chips.show { display: flex; }
+        .cat-chip {
+            flex-shrink: 0;
+            padding: 7px 12px;
+            border-radius: 999px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: 0.2s;
+        }
+        .cat-chip.active {
             background-color: var(--accent-color);
             border-color: var(--accent-color);
             color: var(--accent-text);
@@ -172,11 +290,16 @@
             margin-bottom: 15px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.06);
             border: 1px solid var(--border-color);
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
         /* تمييز البطاقة المشاهدة بإطار فقط دون المساس بشفافية أو ألوان الفيديو */
         .card.watched-card {
             border: 1.5px solid var(--accent-color);
+        }
+        /* وميض خفيف عند الانتقال السريع للفيديو عبر «استكمل من حيث توقفت» أو /progress */
+        .card.focus-highlight {
+            border: 2px solid var(--fav-color);
+            box-shadow: 0 0 0 4px rgba(243, 156, 18, 0.28);
         }
         .video-title {
             font-size: 15px;
@@ -268,7 +391,7 @@
             border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;
         }
 
-        /* إشعار عائم (Toast) لتنبيه المستخدم عند فشل المزامنة أو النجاح */
+        /* إشعار عائم (Toast) لتنبيه المستخدم عند فشل المزامنة */
         .toast {
             position: fixed;
             bottom: 20px;
@@ -307,15 +430,28 @@
         <button id="tab-btn-fav" class="tab-btn fav-tab" onclick="switchTab('fav')" title="المفضلة">⭐</button>
     </div>
 
-    <!-- شريط التقدم التفاعلي -->
+    <!-- شريط التقدم التفاعلي + شارة الهدف الأسبوعي + بانر التهنئة -->
     <div class="progress-wrapper">
         <div class="progress-info">
             <span id="progress-text">جاري تحميل القائمة...</span>
-            <span id="progress-percent">0%</span>
+            <div class="progress-meta-right">
+                <span id="weekly-badge" class="weekly-badge">🔥 0/3</span>
+                <span id="progress-percent">0%</span>
+            </div>
         </div>
         <div class="progress-track">
             <div id="progress-bar"></div>
         </div>
+        <div id="congrats-banner" class="congrats-banner">🎉 أحسنت! أتممت 100% من هذه القائمة بنجاح!</div>
+    </div>
+
+    <!-- بطاقة «استكمل من حيث توقفت» أعلى تبويبي أهم 7 والمخصصة لك -->
+    <div id="nextUpCard" class="next-up-card">
+        <div class="next-up-info">
+            <div class="next-up-label">▶ استكمل من حيث توقفت</div>
+            <div id="nextUpTitle" class="next-up-title"></div>
+        </div>
+        <button id="nextUpBtn" class="next-up-btn" onclick="jumpToNextUnwatched()">انتقل إليه 👇</button>
     </div>
 
     <!-- شريط البحث والفلتر -->
@@ -323,6 +459,9 @@
         <input type="text" id="searchInput" class="search-input" placeholder="🔍 ابحث عن سؤال أو موضوع..." oninput="debouncedApplyFilters()">
         <button id="unwatchedFilterBtn" class="filter-toggle-btn" onclick="toggleUnwatchedFilter()">👁️ غير المشاهد</button>
     </div>
+
+    <!-- شريط فلاتر المحاور الأفقية (يظهر في تبويب «الشاملة» فقط) -->
+    <div id="categoryChips" class="category-chips"></div>
 
     <!-- حاويات التبويبات -->
     <div id="short-content" class="tab-content active">
@@ -385,6 +524,12 @@
         let allIdsGlobal = [];
         let tabValidIds = { short: [], long: [], all: [], fav: [] };
         let onlyUnwatchedFilter = false;
+        let activeCategoryFilter = ""; // فارغ = الكل (لتبويب الشاملة)
+        let weeklyViewsCount = null;
+        let weeklyTargetCount = 3;
+        let currentNextVideoId = null;
+        let pendingFocusVideoId = null;
+        let pendingFocusTab = null;
         let celebratedTabs = {};
         let searchDebounceTimer = null;
         let toastTimer = null;
@@ -438,6 +583,22 @@
             if (!s) return "";
             const num = Number(s);
             return !isNaN(num) ? String(num) : s;
+        }
+
+        /* تفكيك المحاور الإدارية المفصولة بفاصلة وتنظيف الترقيم البادئ (مثل 1. القيادة الذاتية) */
+        function parseCategories(rawCategory) {
+            if (!rawCategory) return [];
+            return String(rawCategory)
+                .split(',')
+                .map(part => part.trim())
+                .filter(part => part && part.toLowerCase() !== 'nan')
+                .map(part => {
+                    const m = part.match(/^(\d+)\.\s*(.+)$/);
+                    if (m) {
+                        return { order: parseInt(m[1], 10), label: m[2].trim() };
+                    }
+                    return { order: 99, label: part };
+                });
         }
 
         async function fetchWithTimeout(url, options = {}, timeoutMs = 4000) {
@@ -499,7 +660,6 @@
                 return null;
             }
 
-            // توحيد معاملات التشغيل (إلغاء التشغيل التلقائي والكتم الإجباري)
             try {
                 const urlObj = new URL(embedUrl);
                 urlObj.searchParams.set('autoplay', 'false');
@@ -526,6 +686,137 @@
             return activeContent.id.replace('-content', '');
         }
 
+        /* تحديث شارة الهدف الأسبوعي (🔥 X/Y هذا الأسبوع) */
+        function updateWeeklyBadge() {
+            const badge = document.getElementById('weekly-badge');
+            if (!badge) return;
+            if (weeklyViewsCount === null || weeklyTargetCount <= 0) {
+                badge.style.display = 'none';
+                return;
+            }
+            const goalMet = weeklyViewsCount >= weeklyTargetCount;
+            badge.style.display = 'inline-block';
+            badge.classList.toggle('goal-met', goalMet);
+            badge.textContent = goalMet
+                ? `🏆 ${weeklyViewsCount}/${weeklyTargetCount} هدف الأسبوع`
+                : `🔥 ${weeklyViewsCount}/${weeklyTargetCount} هذا الأسبوع`;
+        }
+
+        /* تحديث بطاقة «استكمل من حيث توقفت» في تبويبي أهم 7 والمخصصة لك */
+        function updateNextUpCard() {
+            const cardEl = document.getElementById('nextUpCard');
+            const titleEl = document.getElementById('nextUpTitle');
+            if (!cardEl || !titleEl) return;
+
+            const tabKey = getActiveTabKey();
+            if (tabKey !== 'short' && tabKey !== 'long') {
+                cardEl.classList.remove('show');
+                currentNextVideoId = null;
+                return;
+            }
+
+            const fullIds = tabValidIds[tabKey] || [];
+            const nextId = fullIds.find(id => !watchedVideos.includes(id));
+
+            if (!nextId) {
+                cardEl.classList.remove('show');
+                currentNextVideoId = null;
+                return;
+            }
+
+            const vidObj = videosByIdMap.get(nextId);
+            currentNextVideoId = nextId;
+            titleEl.textContent = vidObj?.question || `فيديو #${nextId}`;
+            cardEl.classList.add('show');
+        }
+
+        /* الانتقال السلس إلى بطاقة فيديو محدد وفتح مجموعته وإبرازه لحظياً */
+        function focusVideoInActiveTab(targetVideoId) {
+            const normTarget = normalizeId(targetVideoId);
+            if (!normTarget) return false;
+            const activeContainer = document.querySelector('.tab-content.active');
+            if (!activeContainer) return false;
+
+            const targetCard = activeContainer.querySelector(`.card[data-video-id="${CSS.escape(normTarget)}"]`);
+            if (!targetCard) return false;
+
+            // إظهار البطاقة والمجموعة لو كانت مخفية بفلتر
+            targetCard.classList.remove('is-hidden');
+            const parentDetails = targetCard.closest('details');
+            if (parentDetails) {
+                parentDetails.classList.remove('is-hidden');
+                parentDetails.open = true;
+            }
+
+            setTimeout(() => {
+                targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetCard.classList.add('focus-highlight');
+                setTimeout(() => targetCard.classList.remove('focus-highlight'), 2400);
+            }, 80);
+            return true;
+        }
+
+        function jumpToNextUnwatched() {
+            if (!currentNextVideoId) return;
+            triggerHaptic('selection');
+            focusVideoInActiveTab(currentNextVideoId);
+        }
+
+        /* بناء شريط شرائح المحاور الإدارية الأفقية لتبويب «الشاملة» */
+        function renderCategoryChips() {
+            const container = document.getElementById('categoryChips');
+            if (!container) return;
+
+            const catMap = new Map();
+            allVideosGlobal.forEach(v => {
+                const nid = normalizeId(v.id);
+                if (!nid || nid.startsWith("[Intro_")) return;
+                const bunnyLink = String(v['bunny link'] || v.link || '').trim();
+                if (!bunnyLink || bunnyLink.toLowerCase() === 'nan') return;
+                parseCategories(v.category).forEach(cat => {
+                    if (!catMap.has(cat.label) || cat.order < catMap.get(cat.label)) {
+                        catMap.set(cat.label, cat.order);
+                    }
+                });
+            });
+
+            const sortedCats = Array.from(catMap.entries())
+                .sort((a, b) => a[1] - b[1])
+                .map(entry => entry[0]);
+
+            container.innerHTML = "";
+
+            const allBtn = document.createElement('button');
+            allBtn.className = `cat-chip ${activeCategoryFilter === '' ? 'active' : ''}`;
+            allBtn.textContent = 'الكل';
+            allBtn.onclick = () => selectCategoryChip('');
+            container.appendChild(allBtn);
+
+            sortedCats.forEach(label => {
+                const btn = document.createElement('button');
+                btn.className = `cat-chip ${activeCategoryFilter === label ? 'active' : ''}`;
+                btn.textContent = label;
+                btn.onclick = () => selectCategoryChip(label);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectCategoryChip(categoryLabel) {
+            triggerHaptic('selection');
+            activeCategoryFilter = categoryLabel;
+            document.querySelectorAll('#categoryChips .cat-chip').forEach(chip => {
+                const isAll = categoryLabel === '' && chip.textContent === 'الكل';
+                chip.classList.toggle('active', isAll || chip.textContent === categoryLabel);
+            });
+            applyDomFilters();
+        }
+
+        function updateCategoryChipsVisibility() {
+            const container = document.getElementById('categoryChips');
+            if (!container) return;
+            container.classList.toggle('show', getActiveTabKey() === 'all');
+        }
+
         /* حساب شريط التقدم من القائمة الأصلية للتبويب (لا يتأثر بفلتر غير المشاهد) */
         function updateProgress(justWatchedVideo = false) {
             const tabKey = getActiveTabKey();
@@ -540,6 +831,12 @@
                 ? `أنجزت ${completed} من ${total} فيديوهات`
                 : `لا توجد فيديوهات في هذا القسم`;
 
+            // إظهار بانر التهنئة عند إتمام 100% من القائمة الحالية
+            const congratsEl = document.getElementById('congrats-banner');
+            if (congratsEl) {
+                congratsEl.classList.toggle('show', total > 0 && pct === 100);
+            }
+
             if (pct < 100) {
                 celebratedTabs[tabKey] = false;
             }
@@ -552,6 +849,9 @@
                     triggerSingleVideoConfetti();
                 }
             }
+
+            updateNextUpCard();
+            updateWeeklyBadge();
         }
 
         /* تحديث عدّادات الإنجاز في عناوين المجموعات لحظياً دون إعادة بناء الـ DOM */
@@ -569,7 +869,7 @@
             });
         }
 
-        /* فلترة غير هدامة للبحث و"غير المشاهد" عبر CSS بدون هدم مشغلات الفيديو */
+        /* فلترة غير هدامة للبحث و"غير المشاهد" و"المحور الإداري" عبر CSS بدون هدم مشغلات الفيديو */
         function applyDomFilters() {
             const searchQuery = (document.getElementById('searchInput')?.value || "").trim().toLowerCase();
 
@@ -580,16 +880,20 @@
                 const detailsList = container.querySelectorAll('details[data-group-ids]');
                 let visibleCardsTotal = 0;
 
-                detailsList.forEach((details, idx) => {
+                detailsList.forEach(details => {
                     const cards = details.querySelectorAll('.card');
                     let visibleInGroup = 0;
 
                     cards.forEach(card => {
                         const normId = card.dataset.videoId || "";
                         const qText = card.dataset.searchText || "";
+                        const cardCats = card.dataset.categories ? card.dataset.categories.split('|') : [];
+
                         const matchesSearch = !searchQuery || qText.includes(searchQuery);
                         const matchesUnwatched = !onlyUnwatchedFilter || !watchedVideos.includes(normId);
-                        const show = matchesSearch && matchesUnwatched;
+                        const matchesCategory = (tabKey !== 'all') || !activeCategoryFilter || cardCats.includes(activeCategoryFilter);
+
+                        const show = matchesSearch && matchesUnwatched && matchesCategory;
                         card.classList.toggle('is-hidden', !show);
                         if (show) {
                             visibleInGroup++;
@@ -598,24 +902,21 @@
                     });
 
                     details.classList.toggle('is-hidden', visibleInGroup === 0);
-                    if (searchQuery !== "" && visibleInGroup > 0) {
+                    if ((searchQuery !== "" || (tabKey === 'all' && activeCategoryFilter !== "")) && visibleInGroup > 0) {
                         details.open = true;
-                    } else if (searchQuery === "" && idx > 0) {
-                        // لا نجبر إغلاق مجموعة فتحها المستخدم يدوياً، نتركها كما هي
                     }
                 });
 
-                // إظهار رسالة عدم وجود نتائج عند تطبيق بحث أو فلتر فقط
                 let filterEmptyEl = container.querySelector('.filter-empty-state');
                 if (detailsList.length > 0 && visibleCardsTotal === 0) {
                     if (!filterEmptyEl) {
                         filterEmptyEl = document.createElement('div');
                         filterEmptyEl.className = 'empty-state filter-empty-state';
-                        filterEmptyEl.textContent = onlyUnwatchedFilter && !searchQuery
-                            ? '🎉 أحسنت! شاهدت جميع الفيديوهات في هذا القسم.'
-                            : 'لا توجد فيديوهات مطابقة لبحثك حالياً.';
                         container.appendChild(filterEmptyEl);
                     }
+                    filterEmptyEl.textContent = onlyUnwatchedFilter && !searchQuery && !(tabKey === 'all' && activeCategoryFilter)
+                        ? '🎉 أحسنت! شاهدت جميع الفيديوهات في هذا القسم.'
+                        : 'لا توجد فيديوهات مطابقة لبحثك أو الفلتر المحدد حالياً.';
                     filterEmptyEl.classList.remove('is-hidden');
                 } else if (filterEmptyEl) {
                     filterEmptyEl.classList.add('is-hidden');
@@ -643,6 +944,7 @@
                 renderFavoritesTab();
                 applyDomFilters();
             }
+            updateCategoryChipsVisibility();
             updateProgress(false);
         }
 
@@ -671,8 +973,11 @@
             renderVideoCards('long', longIdsGlobal, document.getElementById('long-content'));
             renderVideoCards('all', allIdsGlobal, document.getElementById('all-content'));
             renderFavoritesTab();
+            renderCategoryChips();
+            updateCategoryChipsVisibility();
             applyDomFilters();
             updateGroupCounters();
+            updateNextUpCard();
         }
 
         function applyActionToUi(normId, actionType, isActive) {
@@ -731,7 +1036,6 @@
             }
             updateProgress(actionType === 'watched' && willBeActive);
 
-            // مزامنة التغيير مع الخادم مع معالجة الفشل والتراجع الآمن (Rollback)
             if (!TELEGRAM_ID || !INIT_DATA) return;
 
             const payloadVideoId = !isNaN(Number(normId)) ? Number(normId) : normId;
@@ -752,6 +1056,16 @@
                 if (!res.ok) {
                     throw new Error(`HTTP ${res.status}`);
                 }
+
+                // تحديث شارة الهدف الأسبوعي لحظياً من رد السيرفر
+                try {
+                    const resData = await res.json();
+                    if (typeof resData.weekly_views === 'number') {
+                        weeklyViewsCount = resData.weekly_views;
+                        if (typeof resData.weekly_target === 'number') weeklyTargetCount = resData.weekly_target;
+                        updateWeeklyBadge();
+                    }
+                } catch (e) {}
             } catch (e) {
                 // التراجع عن التغيير المحلي عند فشل الحفظ على السيرفر لمنع عدم التطابق
                 setLocalArrayState(actionType, normId, isCurrentlyActive);
@@ -876,6 +1190,7 @@
                     card.className = `card ${isWatched ? 'watched-card' : ''}`;
                     card.dataset.videoId = normId;
                     card.dataset.searchText = `${videoData.question || ''} ${videoData.keywords || ''} ${videoData.tags || ''}`.toLowerCase();
+                    card.dataset.categories = parseCategories(videoData.category).map(c => c.label).join('|');
 
                     const titleDiv = document.createElement('div');
                     titleDiv.className = 'video-title';
@@ -940,7 +1255,19 @@
             return await ghRes.json();
         }
 
-        /* مزامنة حالة العميل وقوائم التشغيل المخصصة مباشرة من الـ API الموثّق */
+        /* تطبيق الرابط العميق (?focus=<id>&tab=<short|long>) القادم من أمر /progress في البوت */
+        function applyPendingFocus() {
+            if (pendingFocusTab && ['short', 'long', 'all', 'fav'].includes(pendingFocusTab)) {
+                switchTab(pendingFocusTab);
+                pendingFocusTab = null;
+            }
+            if (pendingFocusVideoId) {
+                const ok = focusVideoInActiveTab(pendingFocusVideoId);
+                if (ok) pendingFocusVideoId = null;
+            }
+        }
+
+        /* مزامنة حالة العميل وقوائم التشغيل والهدف الأسبوعي مباشرة من الـ API الموثّق */
         async function syncUserStateInBackground() {
             if (!TELEGRAM_ID || TELEGRAM_ID === 0 || !INIT_DATA) return;
             try {
@@ -958,12 +1285,19 @@
                     if (Array.isArray(stateData.long_playlist) && stateData.long_playlist.length > 0) {
                         longIdsGlobal = stateData.long_playlist.map(normalizeId).filter(Boolean);
                     }
+                    if (typeof stateData.weekly_views === 'number') {
+                        weeklyViewsCount = stateData.weekly_views;
+                    }
+                    if (typeof stateData.weekly_target === 'number') {
+                        weeklyTargetCount = stateData.weekly_target;
+                    }
 
                     localStorage.setItem(`watched_${TELEGRAM_ID}`, JSON.stringify(watchedVideos));
                     localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
 
                     renderAllTabs();
                     updateProgress(false);
+                    applyPendingFocus();
                 }
             } catch (e) {}
         }
@@ -980,6 +1314,8 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 shortIdsGlobal = urlParams.get('s') ? urlParams.get('s').split(',').map(normalizeId).filter(Boolean) : [];
                 longIdsGlobal = urlParams.get('l') ? urlParams.get('l').split(',').map(normalizeId).filter(Boolean) : [];
+                pendingFocusVideoId = urlParams.get('focus') ? normalizeId(urlParams.get('focus')) : null;
+                pendingFocusTab = urlParams.get('tab') || null;
 
                 allVideosGlobal = await fetchVideosData();
                 videosByIdMap = new Map();
@@ -999,6 +1335,7 @@
 
                 renderAllTabs();
                 updateProgress(false);
+                applyPendingFocus();
                 syncUserStateInBackground();
             } catch (error) {
                 document.getElementById('progress-text').innerText = "تعذر التحميل";

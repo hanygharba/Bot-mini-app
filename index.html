@@ -1039,6 +1039,7 @@
             if (!TELEGRAM_ID || !INIT_DATA) return;
 
             const payloadVideoId = !isNaN(Number(normId)) ? Number(normId) : normId;
+            const currentSource = `miniapp_${getActiveTabKey()}`;
             try {
                 const res = await fetchWithTimeout(`${API_BASE}/toggle_action`, {
                     method: 'POST',
@@ -1049,7 +1050,8 @@
                     body: JSON.stringify({
                         telegram_id: TELEGRAM_ID,
                         video_id: payloadVideoId,
-                        action_type: actionType
+                        action_type: actionType,
+                        source: currentSource
                     })
                 }, 4500);
 
@@ -1081,8 +1083,26 @@
             }
         }
 
-        function openAttachments(attachmentsJson) {
+        function openAttachments(attachmentsJson, videoId = null) {
             triggerHaptic('light');
+            // تسجيل حدث فتح الملحق تحليلياً بدون تعطيل الواجهة
+            if (videoId && TELEGRAM_ID && INIT_DATA) {
+                const normId = normalizeId(videoId);
+                const payloadVideoId = !isNaN(Number(normId)) ? Number(normId) : normId;
+                fetch(`${API_BASE}/track_event`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Telegram-Init-Data': INIT_DATA
+                    },
+                    body: JSON.stringify({
+                        telegram_id: TELEGRAM_ID,
+                        video_id: payloadVideoId,
+                        event_type: 'att_open',
+                        source: `miniapp_${getActiveTabKey()}`
+                    })
+                }).catch(() => {});
+            }
             const container = document.getElementById('attachLinksContainer');
             container.innerHTML = "";
             let attachments = [];
@@ -1227,7 +1247,7 @@
                         attBtn.className = 'btn attach';
                         attBtn.textContent = `🔗 ملحقات (${attachments.length})`;
                         const attData = encodeURIComponent(JSON.stringify(attachments));
-                        attBtn.onclick = () => openAttachments(attData);
+                        attBtn.onclick = () => openAttachments(attData, normId);
                         actionsDiv.appendChild(attBtn);
                     }
 

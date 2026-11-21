@@ -28,7 +28,7 @@
             -webkit-touch-callout: none;
             box-sizing: border-box;
         }
-        
+
         input.search-input {
             -webkit-user-select: text;
             user-select: text;
@@ -44,7 +44,7 @@
 
         .header { text-align: center; margin-bottom: 15px; }
         .header h2 { margin: 5px 0; font-size: 20px; }
-        
+
         /* التبويبات */
         .tabs {
             display: flex;
@@ -145,6 +145,9 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
+        /* فئة إخفاء غير هدامة للبحث والفلترة بدون هدم مشغلات الفيديو */
+        .is-hidden { display: none !important; }
+
         /* المجموعات والبطاقات */
         .group-summary {
             background-color: var(--card-bg);
@@ -161,7 +164,7 @@
             outline: none;
         }
         details { margin-bottom: 15px; }
-        
+
         .card {
             background-color: var(--card-bg);
             border-radius: 12px;
@@ -182,7 +185,7 @@
             line-height: 1.5;
             color: var(--text-color);
         }
-        
+
         .video-container {
             width: 100%;
             border-radius: 8px;
@@ -203,7 +206,7 @@
         .btn.watched.active { background-color: var(--accent-color); color: #fff; border-color: transparent; }
         .btn.fav.active { background-color: var(--fav-color); color: #fff; border-color: transparent; }
         .btn.attach { background-color: #4a69bd; color: #fff; border-color: transparent; }
-        
+
         .empty-state {
             text-align: center;
             padding: 30px 15px;
@@ -264,6 +267,31 @@
             width: 100%; margin-top: 15px; padding: 12px; background-color: #e74c3c;
             border: none; color: white; border-radius: 10px; font-weight: bold; cursor: pointer;
         }
+
+        /* إشعار عائم (Toast) لتنبيه المستخدم عند فشل المزامنة أو النجاح */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background-color: #333;
+            color: #fff;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            z-index: 2000;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -292,7 +320,7 @@
 
     <!-- شريط البحث والفلتر -->
     <div class="filter-bar">
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 ابحث عن سؤال أو موضوع..." oninput="applyFilters()">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 ابحث عن سؤال أو موضوع..." oninput="debouncedApplyFilters()">
         <button id="unwatchedFilterBtn" class="filter-toggle-btn" onclick="toggleUnwatchedFilter()">👁️ غير المشاهد</button>
     </div>
 
@@ -314,6 +342,9 @@
             <button class="close-btn" onclick="document.getElementById('attachModal').style.display='none'">إغلاق</button>
         </div>
     </div>
+
+    <!-- عنصر الإشعار العائم -->
+    <div id="toast" class="toast"></div>
 
     <script>
         let tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : { expand: () => {}, initDataUnsafe: {}, initData: "" };
@@ -344,15 +375,28 @@
         const API_BASE = "https://api.hanygharba.com";
         const TELEGRAM_ID = tg.initDataUnsafe?.user?.id || 0;
         const INIT_DATA = tg.initData || "";
-        
+
         let watchedVideos = [];
         let favoriteVideos = [];
         let allVideosGlobal = [];
+        let videosByIdMap = new Map();
         let shortIdsGlobal = [];
         let longIdsGlobal = [];
         let allIdsGlobal = [];
+        let tabValidIds = { short: [], long: [], all: [], fav: [] };
         let onlyUnwatchedFilter = false;
         let celebratedTabs = {};
+        let searchDebounceTimer = null;
+        let toastTimer = null;
+
+        function showToast(message) {
+            const toastEl = document.getElementById('toast');
+            if (!toastEl) return;
+            toastEl.textContent = message;
+            toastEl.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3000);
+        }
 
         function triggerHaptic(type = 'light') {
             try {
@@ -362,6 +406,30 @@
                     else tg.HapticFeedback.impactOccurred(type);
                 }
             } catch (e) {}
+        }
+
+        /* تأثير احتفالي لطيف عند إتمام مشاهدة أي فيديو فردي */
+        function triggerSingleVideoConfetti() {
+            triggerHaptic('success');
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 45,
+                    spread: 55,
+                    origin: { y: 0.72 }
+                });
+            }
+        }
+
+        /* تأثير احتفالي متكرر 3 مرات عند إنهاء 100% من القائمة النشطة */
+        function triggerListCompleteConfetti() {
+            triggerHaptic('success');
+            if (typeof confetti !== 'function') return;
+            const bursts = [
+                { delay: 0, opts: { particleCount: 70, spread: 65, origin: { x: 0.3, y: 0.65 } } },
+                { delay: 450, opts: { particleCount: 70, spread: 65, origin: { x: 0.7, y: 0.65 } } },
+                { delay: 900, opts: { particleCount: 95, spread: 85, origin: { x: 0.5, y: 0.55 } } }
+            ];
+            bursts.forEach(b => setTimeout(() => confetti(b.opts), b.delay));
         }
 
         function normalizeId(val) {
@@ -410,42 +478,171 @@
             }));
         }
 
-        function updateProgress(triggerCelebration = false) {
-            const activeContent = document.querySelector('.tab-content.active');
-            if (!activeContent) return;
-            const activeTabId = activeContent.id;
+        /* استخراج رابط iframe آمن وبناء عنصر الفيديو عبر DOM لتفادي حقن HTML */
+        function createSafeVideoElement(rawLink) {
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'relative';
+            wrapper.style.paddingTop = '56.25%';
 
-            const total = activeContent.querySelectorAll('.btn.watched').length;
-            const completed = activeContent.querySelectorAll('.btn.watched.active').length;
+            let embedUrl = "";
+            const trimmed = String(rawLink || "").trim();
+            if (trimmed.startsWith("http")) {
+                embedUrl = trimmed.replace("/play/", "/embed/");
+            } else {
+                const srcMatch = trimmed.match(/src=["']([^"']+)["']/i);
+                if (srcMatch && srcMatch[1]) {
+                    embedUrl = srcMatch[1];
+                }
+            }
+
+            if (!embedUrl || !embedUrl.startsWith("https://")) {
+                return null;
+            }
+
+            // توحيد معاملات التشغيل (إلغاء التشغيل التلقائي والكتم الإجباري)
+            try {
+                const urlObj = new URL(embedUrl);
+                urlObj.searchParams.set('autoplay', 'false');
+                urlObj.searchParams.set('loop', 'false');
+                urlObj.searchParams.set('muted', 'false');
+                urlObj.searchParams.set('preload', 'false');
+                urlObj.searchParams.set('responsive', 'true');
+                embedUrl = urlObj.toString();
+            } catch (e) {}
+
+            const iframe = document.createElement('iframe');
+            iframe.src = embedUrl;
+            iframe.loading = 'lazy';
+            iframe.style.cssText = 'border:0;position:absolute;top:0;height:100%;width:100%;';
+            iframe.allow = 'accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;';
+            iframe.allowFullscreen = true;
+            wrapper.appendChild(iframe);
+            return wrapper;
+        }
+
+        function getActiveTabKey() {
+            const activeContent = document.querySelector('.tab-content.active');
+            if (!activeContent) return 'short';
+            return activeContent.id.replace('-content', '');
+        }
+
+        /* حساب شريط التقدم من القائمة الأصلية للتبويب (لا يتأثر بفلتر غير المشاهد) */
+        function updateProgress(justWatchedVideo = false) {
+            const tabKey = getActiveTabKey();
+            const fullIds = tabValidIds[tabKey] || [];
+            const total = fullIds.length;
+            const completed = fullIds.filter(id => watchedVideos.includes(id)).length;
             const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
 
             document.getElementById('progress-bar').style.width = pct + '%';
             document.getElementById('progress-percent').innerText = pct + '%';
-            document.getElementById('progress-text').innerText = total > 0 
-                ? `أنجزت ${completed} من ${total} فيديوهات` 
+            document.getElementById('progress-text').innerText = total > 0
+                ? `أنجزت ${completed} من ${total} فيديوهات`
                 : `لا توجد فيديوهات في هذا القسم`;
 
-            if (triggerCelebration && total > 0 && pct === 100 && !celebratedTabs[activeTabId]) {
-                celebratedTabs[activeTabId] = true;
-                triggerHaptic('success');
-                if (typeof confetti === 'function') {
-                    confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+            if (pct < 100) {
+                celebratedTabs[tabKey] = false;
+            }
+
+            if (justWatchedVideo) {
+                if (total > 0 && pct === 100 && !celebratedTabs[tabKey]) {
+                    celebratedTabs[tabKey] = true;
+                    triggerListCompleteConfetti();
+                } else {
+                    triggerSingleVideoConfetti();
                 }
             }
+        }
+
+        /* تحديث عدّادات الإنجاز في عناوين المجموعات لحظياً دون إعادة بناء الـ DOM */
+        function updateGroupCounters() {
+            document.querySelectorAll('details[data-group-ids]').forEach(details => {
+                const ids = details.dataset.groupIds ? details.dataset.groupIds.split(',') : [];
+                const total = ids.length;
+                const watchedCount = ids.filter(id => watchedVideos.includes(id)).length;
+                const isDone = total > 0 && watchedCount === total;
+                const statusEl = details.querySelector('.group-status');
+                if (statusEl) {
+                    statusEl.style.color = isDone ? '#2ecc71' : 'var(--hint-color)';
+                    statusEl.textContent = isDone ? '✅ مكتملة' : `${watchedCount}/${total}`;
+                }
+            });
+        }
+
+        /* فلترة غير هدامة للبحث و"غير المشاهد" عبر CSS بدون هدم مشغلات الفيديو */
+        function applyDomFilters() {
+            const searchQuery = (document.getElementById('searchInput')?.value || "").trim().toLowerCase();
+
+            ['short', 'long', 'all', 'fav'].forEach(tabKey => {
+                const container = document.getElementById(`${tabKey}-content`);
+                if (!container) return;
+
+                const detailsList = container.querySelectorAll('details[data-group-ids]');
+                let visibleCardsTotal = 0;
+
+                detailsList.forEach((details, idx) => {
+                    const cards = details.querySelectorAll('.card');
+                    let visibleInGroup = 0;
+
+                    cards.forEach(card => {
+                        const normId = card.dataset.videoId || "";
+                        const qText = card.dataset.searchText || "";
+                        const matchesSearch = !searchQuery || qText.includes(searchQuery);
+                        const matchesUnwatched = !onlyUnwatchedFilter || !watchedVideos.includes(normId);
+                        const show = matchesSearch && matchesUnwatched;
+                        card.classList.toggle('is-hidden', !show);
+                        if (show) {
+                            visibleInGroup++;
+                            visibleCardsTotal++;
+                        }
+                    });
+
+                    details.classList.toggle('is-hidden', visibleInGroup === 0);
+                    if (searchQuery !== "" && visibleInGroup > 0) {
+                        details.open = true;
+                    } else if (searchQuery === "" && idx > 0) {
+                        // لا نجبر إغلاق مجموعة فتحها المستخدم يدوياً، نتركها كما هي
+                    }
+                });
+
+                // إظهار رسالة عدم وجود نتائج عند تطبيق بحث أو فلتر فقط
+                let filterEmptyEl = container.querySelector('.filter-empty-state');
+                if (detailsList.length > 0 && visibleCardsTotal === 0) {
+                    if (!filterEmptyEl) {
+                        filterEmptyEl = document.createElement('div');
+                        filterEmptyEl.className = 'empty-state filter-empty-state';
+                        filterEmptyEl.textContent = onlyUnwatchedFilter && !searchQuery
+                            ? '🎉 أحسنت! شاهدت جميع الفيديوهات في هذا القسم.'
+                            : 'لا توجد فيديوهات مطابقة لبحثك حالياً.';
+                        container.appendChild(filterEmptyEl);
+                    }
+                    filterEmptyEl.classList.remove('is-hidden');
+                } else if (filterEmptyEl) {
+                    filterEmptyEl.classList.add('is-hidden');
+                }
+            });
+        }
+
+        function debouncedApplyFilters() {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = setTimeout(applyDomFilters, 250);
         }
 
         function switchTab(tabName) {
             triggerHaptic('selection');
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            
+
             const targetBtn = document.getElementById(`tab-btn-${tabName}`);
             const targetContent = document.getElementById(`${tabName}-content`);
-            
+
             if (targetBtn) targetBtn.classList.add('active');
             if (targetContent) targetContent.classList.add('active');
 
-            if (tabName === 'fav') renderFavoritesTab();
+            if (tabName === 'fav') {
+                renderFavoritesTab();
+                applyDomFilters();
+            }
             updateProgress(false);
         }
 
@@ -454,11 +651,7 @@
             onlyUnwatchedFilter = !onlyUnwatchedFilter;
             const btn = document.getElementById('unwatchedFilterBtn');
             btn.classList.toggle('active', onlyUnwatchedFilter);
-            applyFilters();
-        }
-
-        function applyFilters() {
-            renderAllTabs();
+            applyDomFilters();
             updateProgress(false);
         }
 
@@ -466,46 +659,27 @@
             const favContainer = document.getElementById('fav-content');
             if (!favContainer) return;
             renderVideoCards(
+                'fav',
                 favoriteVideos,
-                allVideosGlobal,
                 favContainer,
                 "⭐ لم تقم بإضافة أي فيديوهات لقائمة المهتمين بعد.<br><small>اضغط على زر «📌 مهتم» أسفل أي فيديو ليظهر لك هنا مباشرة.</small>"
             );
         }
 
         function renderAllTabs() {
-            renderVideoCards(shortIdsGlobal, allVideosGlobal, document.getElementById('short-content'));
-            renderVideoCards(longIdsGlobal, allVideosGlobal, document.getElementById('long-content'));
-            renderVideoCards(allIdsGlobal, allVideosGlobal, document.getElementById('all-content'));
+            renderVideoCards('short', shortIdsGlobal, document.getElementById('short-content'));
+            renderVideoCards('long', longIdsGlobal, document.getElementById('long-content'));
+            renderVideoCards('all', allIdsGlobal, document.getElementById('all-content'));
             renderFavoritesTab();
+            applyDomFilters();
+            updateGroupCounters();
         }
 
-        async function toggleAction(clickedButton, videoId, actionType) {
-            triggerHaptic('light');
-            const normId = normalizeId(videoId);
-            const isCurrentlyActive = clickedButton.classList.contains('active');
-            const willBeActive = !isCurrentlyActive;
-
-            if (actionType === 'watched') {
-                if (willBeActive) {
-                    if (!watchedVideos.includes(normId)) watchedVideos.push(normId);
-                } else {
-                    watchedVideos = watchedVideos.filter(id => id !== normId);
-                }
-                localStorage.setItem(`watched_${TELEGRAM_ID}`, JSON.stringify(watchedVideos));
-            } else {
-                if (willBeActive) {
-                    if (!favoriteVideos.includes(normId)) favoriteVideos.push(normId);
-                } else {
-                    favoriteVideos = favoriteVideos.filter(id => id !== normId);
-                }
-                localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
-            }
-
+        function applyActionToUi(normId, actionType, isActive) {
             const allRelatedButtons = document.querySelectorAll(`button[data-id="${CSS.escape(normId)}"]`);
             allRelatedButtons.forEach(btn => {
                 if (btn.classList.contains(actionType === 'watched' ? 'watched' : 'fav')) {
-                    if (willBeActive) {
+                    if (isActive) {
                         btn.classList.add('active');
                         btn.innerText = actionType === 'watched' ? '✅ شاهدته' : '⭐ مهتم';
                     } else {
@@ -514,17 +688,55 @@
                     }
                     if (actionType === 'watched') {
                         const parentCard = btn.closest('.card');
-                        if (parentCard) parentCard.classList.toggle('watched-card', willBeActive);
+                        if (parentCard) parentCard.classList.toggle('watched-card', isActive);
                     }
                 }
             });
+        }
 
-            if (actionType === 'favorite') renderFavoritesTab();
+        function setLocalArrayState(actionType, normId, isActive) {
+            if (actionType === 'watched') {
+                if (isActive) {
+                    if (!watchedVideos.includes(normId)) watchedVideos.push(normId);
+                } else {
+                    watchedVideos = watchedVideos.filter(id => id !== normId);
+                }
+                localStorage.setItem(`watched_${TELEGRAM_ID}`, JSON.stringify(watchedVideos));
+            } else {
+                if (isActive) {
+                    if (!favoriteVideos.includes(normId)) favoriteVideos.push(normId);
+                } else {
+                    favoriteVideos = favoriteVideos.filter(id => id !== normId);
+                }
+                localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
+            }
+        }
+
+        async function toggleAction(clickedButton, videoId, actionType) {
+            triggerHaptic('light');
+            const normId = normalizeId(videoId);
+            const isCurrentlyActive = clickedButton.classList.contains('active');
+            const willBeActive = !isCurrentlyActive;
+
+            // تحديث متفائل (Optimistic UI)
+            setLocalArrayState(actionType, normId, willBeActive);
+            applyActionToUi(normId, actionType, willBeActive);
+
+            if (actionType === 'favorite') {
+                renderFavoritesTab();
+                applyDomFilters();
+            } else {
+                updateGroupCounters();
+                if (onlyUnwatchedFilter) applyDomFilters();
+            }
             updateProgress(actionType === 'watched' && willBeActive);
+
+            // مزامنة التغيير مع الخادم مع معالجة الفشل والتراجع الآمن (Rollback)
+            if (!TELEGRAM_ID || !INIT_DATA) return;
 
             const payloadVideoId = !isNaN(Number(normId)) ? Number(normId) : normId;
             try {
-                await fetchWithTimeout(`${API_BASE}/toggle_action`, {
+                const res = await fetchWithTimeout(`${API_BASE}/toggle_action`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -535,8 +747,24 @@
                         video_id: payloadVideoId,
                         action_type: actionType
                     })
-                }, 3000);
-            } catch(e) {}
+                }, 4500);
+
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+            } catch (e) {
+                // التراجع عن التغيير المحلي عند فشل الحفظ على السيرفر لمنع عدم التطابق
+                setLocalArrayState(actionType, normId, isCurrentlyActive);
+                applyActionToUi(normId, actionType, isCurrentlyActive);
+                if (actionType === 'favorite') {
+                    renderFavoritesTab();
+                } else {
+                    updateGroupCounters();
+                }
+                applyDomFilters();
+                updateProgress(false);
+                showToast('⚠️ تعذر حفظ التغيير مع الخادم، يرجى المحاولة مجدداً.');
+            }
         }
 
         function openAttachments(attachmentsJson) {
@@ -547,12 +775,12 @@
             try {
                 attachments = JSON.parse(decodeURIComponent(attachmentsJson));
             } catch (e) {}
-            
+
             attachments.forEach(att => {
                 const itemDiv = document.createElement('div');
                 itemDiv.style.marginBottom = "14px";
                 itemDiv.style.textAlign = "right";
-                
+
                 if (att.link && att.link.trim() !== "") {
                     let a = document.createElement('a');
                     a.className = 'attach-link';
@@ -585,105 +813,108 @@
             document.getElementById('attachModal').style.display = 'flex';
         }
 
-        function renderVideoCards(idsArray, allVideosData, containerElement, emptyMessage = "لا توجد فيديوهات في هذه القائمة.") {
+        function renderVideoCards(tabKey, idsArray, containerElement, emptyMessage = "لا توجد فيديوهات في هذه القائمة.") {
             containerElement.innerHTML = "";
-            if (!idsArray || idsArray.length === 0) {
-                containerElement.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
-                return;
+            const validItems = [];
+
+            if (Array.isArray(idsArray)) {
+                idsArray.forEach(rawId => {
+                    const normId = normalizeId(rawId);
+                    const videoData = videosByIdMap.get(normId);
+                    const bunnyLink = String(videoData ? (videoData['bunny link'] || videoData.link || '') : '').trim();
+
+                    if (videoData && bunnyLink !== "" && bunnyLink.toLowerCase() !== "nan") {
+                        validItems.push({ normId, videoData, bunnyLink });
+                    }
+                });
             }
 
-            const searchQuery = (document.getElementById('searchInput')?.value || "").trim().toLowerCase();
-
-            const validItems = [];
-            idsArray.forEach(rawId => {
-                const normId = normalizeId(rawId);
-                const videoData = allVideosData.find(v => normalizeId(v.id) === normId);
-                const bunnyLink = String(videoData ? (videoData['bunny link'] || videoData.link || '') : '').trim();
-
-                if (videoData && bunnyLink !== "" && bunnyLink.toLowerCase() !== "nan") {
-                    const questionText = String(videoData.question || "").toLowerCase();
-                    const matchesSearch = !searchQuery || questionText.includes(searchQuery);
-                    const matchesUnwatched = !onlyUnwatchedFilter || !watchedVideos.includes(normId);
-                    
-                    if (matchesSearch && matchesUnwatched) {
-                        validItems.push({ normId, videoData });
-                    }
-                }
-            });
+            // حفظ قائمة المعرّفات الصالحة الكاملة لهذا التبويب لحساب شريط التقدم بدقة
+            tabValidIds[tabKey] = validItems.map(item => item.normId);
 
             if (validItems.length === 0) {
-                containerElement.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
+                const emptyDiv = document.createElement('div');
+                emptyDiv.className = 'empty-state';
+                emptyDiv.innerHTML = emptyMessage;
+                containerElement.appendChild(emptyDiv);
                 return;
             }
 
             const chunkSize = 10;
             for (let i = 0; i < validItems.length; i += chunkSize) {
                 const chunk = validItems.slice(i, i + chunkSize);
-                
+
                 const details = document.createElement('details');
-                if (i === 0 || searchQuery !== "") details.open = true; 
-                
+                if (i === 0) details.open = true;
+                details.dataset.groupIds = chunk.map(item => item.normId).join(',');
+
                 const watchedInChunk = chunk.filter(item => watchedVideos.includes(item.normId)).length;
                 const isGroupDone = watchedInChunk === chunk.length;
 
                 const summary = document.createElement('summary');
                 summary.className = 'group-summary';
-                summary.innerHTML = `
-                    <span>مجموعة ${(i/chunkSize)+1} (${chunk.length} فيديوهات)</span>
-                    <span style="font-size:12px; color:${isGroupDone ? '#2ecc71' : 'var(--hint-color)'};">
-                        ${isGroupDone ? '✅ مكتملة' : `${watchedInChunk}/${chunk.length}`}
-                    </span>
-                `;
+
+                const labelSpan = document.createElement('span');
+                labelSpan.textContent = `مجموعة ${(i / chunkSize) + 1} (${chunk.length} فيديوهات)`;
+
+                const statusSpan = document.createElement('span');
+                statusSpan.className = 'group-status';
+                statusSpan.style.fontSize = '12px';
+                statusSpan.style.color = isGroupDone ? '#2ecc71' : 'var(--hint-color)';
+                statusSpan.textContent = isGroupDone ? '✅ مكتملة' : `${watchedInChunk}/${chunk.length}`;
+
+                summary.appendChild(labelSpan);
+                summary.appendChild(statusSpan);
                 details.appendChild(summary);
 
                 chunk.forEach((item, index) => {
-                    const { normId, videoData } = item;
+                    const { normId, videoData, bunnyLink } = item;
                     const isWatched = watchedVideos.includes(normId);
                     const isFav = favoriteVideos.includes(normId);
 
                     const card = document.createElement('div');
                     card.className = `card ${isWatched ? 'watched-card' : ''}`;
-                    
-                    // نفس طريقة الكود الأصلي تماماً مع إلغاء الكتم الإجباري فقط
-                    let videoLink = String(videoData['bunny link'] || videoData.link).trim();
-                    let safeLinkHtml = "";
-                    
-                    if (videoLink.startsWith("http")) {
-                        let embedUrl = videoLink.replace("/play/", "/embed/");
-                        safeLinkHtml = `<div style="position:relative;padding-top:56.25%;"><iframe src="${embedUrl}?autoplay=false&loop=false&muted=false&preload=false&responsive=true" loading="lazy" style="border:0;position:absolute;top:0;height:100%;width:100%;" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture;fullscreen;" allowfullscreen="true"></iframe></div>`;
-                    } else {
-                        safeLinkHtml = videoLink
-                            .replace(/autoplay=true/gi, "autoplay=false")
-                            .replace(/muted=true/gi, "muted=false");
-                    }
-                    
-                    const safeNormId = normId.replace(/'/g, "\\'");
-                    const attachments = getVideoAttachments(videoData);
-                    let attachBtnHtml = "";
-                    if (attachments.length > 0) {
-                        const attData = encodeURIComponent(JSON.stringify(attachments)).replace(/'/g, "%27");
-                        attachBtnHtml = `<button class="btn attach" onclick="openAttachments('${attData}')">🔗 ملحقات (${attachments.length})</button>`;
-                    }
-                    
+                    card.dataset.videoId = normId;
+                    card.dataset.searchText = `${videoData.question || ''} ${videoData.keywords || ''} ${videoData.tags || ''}`.toLowerCase();
+
                     const titleDiv = document.createElement('div');
                     titleDiv.className = 'video-title';
-                    titleDiv.textContent = `${(i + index + 1)}. ${videoData.question || ''}`;
-                    
+                    titleDiv.textContent = `${i + index + 1}. ${videoData.question || ''}`;
+
                     const videoContainerDiv = document.createElement('div');
                     videoContainerDiv.className = 'video-container';
-                    videoContainerDiv.innerHTML = safeLinkHtml;
-                    
+                    const safeVideoEl = createSafeVideoElement(bunnyLink);
+                    if (safeVideoEl) {
+                        videoContainerDiv.appendChild(safeVideoEl);
+                    }
+
                     const actionsDiv = document.createElement('div');
                     actionsDiv.className = 'actions';
-                    actionsDiv.innerHTML = `
-                        <button class="btn watched ${isWatched ? 'active' : ''}" data-id="${normId}" onclick="toggleAction(this, '${safeNormId}', 'watched')">
-                            ${isWatched ? '✅ شاهدته' : '✔️ شاهدته'}
-                        </button>
-                        <button class="btn fav ${isFav ? 'active' : ''}" data-id="${normId}" onclick="toggleAction(this, '${safeNormId}', 'favorite')">
-                            ${isFav ? '⭐ مهتم' : '📌 مهتم'}
-                        </button>
-                        ${attachBtnHtml}
-                    `;
+
+                    const watchedBtn = document.createElement('button');
+                    watchedBtn.className = `btn watched ${isWatched ? 'active' : ''}`;
+                    watchedBtn.dataset.id = normId;
+                    watchedBtn.textContent = isWatched ? '✅ شاهدته' : '✔️ شاهدته';
+                    watchedBtn.onclick = () => toggleAction(watchedBtn, normId, 'watched');
+
+                    const favBtn = document.createElement('button');
+                    favBtn.className = `btn fav ${isFav ? 'active' : ''}`;
+                    favBtn.dataset.id = normId;
+                    favBtn.textContent = isFav ? '⭐ مهتم' : '📌 مهتم';
+                    favBtn.onclick = () => toggleAction(favBtn, normId, 'favorite');
+
+                    actionsDiv.appendChild(watchedBtn);
+                    actionsDiv.appendChild(favBtn);
+
+                    const attachments = getVideoAttachments(videoData);
+                    if (attachments.length > 0) {
+                        const attBtn = document.createElement('button');
+                        attBtn.className = 'btn attach';
+                        attBtn.textContent = `🔗 ملحقات (${attachments.length})`;
+                        const attData = encodeURIComponent(JSON.stringify(attachments));
+                        attBtn.onclick = () => openAttachments(attData);
+                        actionsDiv.appendChild(attBtn);
+                    }
 
                     card.appendChild(titleDiv);
                     card.appendChild(videoContainerDiv);
@@ -703,26 +934,34 @@
                     if (Array.isArray(data) && data.length > 0) return data;
                 }
             } catch (e) {}
-            
+
             const ghRes = await fetchWithTimeout(`https://raw.githubusercontent.com/hanygharba/Bot-mini-app/main/qa_data.json?v=${cacheHour}`, {}, 8000);
             if (!ghRes.ok) throw new Error("تعذر جلب ملف البيانات");
             return await ghRes.json();
         }
 
+        /* مزامنة حالة العميل وقوائم التشغيل المخصصة مباشرة من الـ API الموثّق */
         async function syncUserStateInBackground() {
-            if (!TELEGRAM_ID || TELEGRAM_ID === 0) return;
+            if (!TELEGRAM_ID || TELEGRAM_ID === 0 || !INIT_DATA) return;
             try {
                 const stateRes = await fetchWithTimeout(`${API_BASE}/user_state/${TELEGRAM_ID}`, {
                     headers: { 'X-Telegram-Init-Data': INIT_DATA }
-                }, 3500);
+                }, 4000);
                 if (stateRes.ok) {
                     const stateData = await stateRes.json();
                     watchedVideos = (stateData.watched || []).map(normalizeId);
                     favoriteVideos = (stateData.favorites || []).map(normalizeId);
-                    
+
+                    if (Array.isArray(stateData.short_playlist) && stateData.short_playlist.length > 0) {
+                        shortIdsGlobal = stateData.short_playlist.map(normalizeId).filter(Boolean);
+                    }
+                    if (Array.isArray(stateData.long_playlist) && stateData.long_playlist.length > 0) {
+                        longIdsGlobal = stateData.long_playlist.map(normalizeId).filter(Boolean);
+                    }
+
                     localStorage.setItem(`watched_${TELEGRAM_ID}`, JSON.stringify(watchedVideos));
                     localStorage.setItem(`fav_${TELEGRAM_ID}`, JSON.stringify(favoriteVideos));
-                    
+
                     renderAllTabs();
                     updateProgress(false);
                 }
@@ -743,7 +982,13 @@
                 longIdsGlobal = urlParams.get('l') ? urlParams.get('l').split(',').map(normalizeId).filter(Boolean) : [];
 
                 allVideosGlobal = await fetchVideosData();
-                allIdsGlobal = allVideosGlobal.map(v => normalizeId(v.id)).filter(id => !id.startsWith("[Intro_"));
+                videosByIdMap = new Map();
+                allVideosGlobal.forEach(v => {
+                    const nid = normalizeId(v.id);
+                    if (nid) videosByIdMap.set(nid, v);
+                });
+
+                allIdsGlobal = allVideosGlobal.map(v => normalizeId(v.id)).filter(id => id && !id.startsWith("[Intro_"));
 
                 if (shortIdsGlobal.length === 0 && allIdsGlobal.length > 0) {
                     shortIdsGlobal = allIdsGlobal.slice(0, 7);
@@ -757,7 +1002,12 @@
                 syncUserStateInBackground();
             } catch (error) {
                 document.getElementById('progress-text').innerText = "تعذر التحميل";
-                document.getElementById('short-content').innerHTML = `<div class='empty-state'>⚠️ تعذر تحميل قائمة الفيديوهات.<br><small>${error.message || ''}</small></div>`;
+                const shortEl = document.getElementById('short-content');
+                shortEl.innerHTML = "";
+                const errBox = document.createElement('div');
+                errBox.className = 'empty-state';
+                errBox.textContent = `⚠️ تعذر تحميل قائمة الفيديوهات. ${error?.message || ''}`;
+                shortEl.appendChild(errBox);
             }
         }
 
